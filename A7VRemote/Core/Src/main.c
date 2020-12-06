@@ -9,6 +9,12 @@
 #include "CC1101.h"
 #include "ADC.h"
 #include "TIM.h"
+#include "Messages.h"
+
+
+#define TX_PERIOD		100
+#define ACK_PERIOD		300
+#define LINK_TIMEOUT	500
 
 
 static Button_t gPwrButton;
@@ -51,54 +57,67 @@ void MAIN_Powerdown(void)
 int main(void)
 {
 	CORE_Init();
-
 	MAIN_Powerup();
-
 	ADC_Init();
 
+	uint8_t address = 2;
+
 	CC1101Config_t cc1101_config = {
-			.address = 2,
-			.channel = 0,
+			.address = address,
+			.channel = address,
 			.power = 10,
 	};
 	CC1101_Init(&cc1101_config);
 	UART_Init(COM_UART, COM_BAUD);
 
-	TIM_Init(TIM_2, 1000, 250);
-	TIM_EnablePwm(TIM_2, 0, READY_LED_GPIO, READY_LED_PIN, GPIO_AF5_TIM2);
-	TIM_SetPulse(TIM_2, 0, 125);
-	TIM_Start(TIM_2);
+	uint32_t lastTx = 0;
+	uint32_t lastAckReq = 0;
+	uint32_t lastLink = 0;
+	bool linked = false;
 
 	while (1)
 	{
-		uint32_t mv = ADC_Read(PWR_SNS_AIN) * ADC_VREF / ADC_MAX;
+		uint32_t now = HAL_GetTick();
 
-		if (Button_Update(&gPwrButton) == BTN_Pressed && mv)
+		if (Button_Update(&gPwrButton) == BTN_Pressed)
 		{
 			MAIN_Powerdown();
 		}
 
-		//*
 		uint8_t bfr[8];
 		uint8_t read = CC1101_Rx(bfr, sizeof(bfr));
 		if (read)
 		{
-			UART_Tx(COM_UART, bfr, read);
+			MSG_Tank_t rx;
+			if (MSG_TankUnpack(&rx, bfr, read))
+			{
+				linked = true;
+				lastLink = now;
+				GPIO_SET(LINK_LED_GPIO, LINK_LED_PIN);
+			}
 		}
-		/*/
-		static uint32_t tide = 0;
-		uint32_t now = HAL_GetTick();
-		if (now - tide > 500)
-		{
-			tide = now;
 
-			uint8_t bfr[] = {
-					0x01,
-					0x02
-			};
-			CC1101_Tx(0, bfr, sizeof(bfr));
+		if (now - lastTx > TX_PERIOD)
+		{
+			lastTx = now;
+
+			MSG_Remote_t tx = { 0 };
+
+			if (now - lastAckReq > ACK_PERIOD)
+			{
+				lastAckReq = 0;
+				tx.ackRequest = true;
+			}
+
+			uint8_t written = MSG_RemotePack(&tx, bfr);
+			CC1101_Tx(address, bfr, written);
 		}
-		//*/
+
+		if (linked && now - lastLink > LINK_TIMEOUT)
+		{
+			GPIO_RESET(LINK_LED_GPIO, LINK_LED_PIN);
+			linked = false;
+		}
 
 		CORE_Idle();
 	}

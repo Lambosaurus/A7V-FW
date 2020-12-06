@@ -9,20 +9,21 @@
 #include "CC1101.h"
 #include "ADC.h"
 #include "TIM.h"
+#include "Messages.h"
+
+
+#define LINK_TIMEOUT	500
 
 
 static Button_t gPwrButton;
-static Button_t gAltButton;
 
 
 void MAIN_Powerup(void)
 {
 	Button_Init(&gPwrButton, PWR_BTN_GPIO, PWR_BTN_PIN);
-	Button_Init(&gAltButton, ALT_BTN_GPIO, ALT_BTN_PIN);
 
 	GPIO_EnableOutput(PWR_LED_GPIO, PWR_LED_PIN, GPIO_PIN_SET);
 	GPIO_EnableOutput(LINK_LED_GPIO, LINK_LED_PIN, GPIO_PIN_RESET);
-	GPIO_EnableOutput(READY_LED_GPIO, READY_LED_PIN, GPIO_PIN_RESET);
 	GPIO_EnableOutput(PWR_HOLD_GPIO, PWR_HOLD_PIN, GPIO_PIN_RESET);
 
 	if (Button_Update(&gPwrButton) & BTN_Held)
@@ -56,49 +57,57 @@ int main(void)
 
 	ADC_Init();
 
+	uint8_t address = 2;
+
 	CC1101Config_t cc1101_config = {
-			.address = 2,
-			.channel = 0,
+			.address = address,
+			.channel = address,
 			.power = 10,
 	};
 	CC1101_Init(&cc1101_config);
 	UART_Init(COM_UART, COM_BAUD);
 
-	TIM_Init(TIM_2, 1000, 250);
-	TIM_EnablePwm(TIM_2, 0, READY_LED_GPIO, READY_LED_PIN, GPIO_AF5_TIM2);
-	TIM_SetPulse(TIM_2, 0, 125);
-	TIM_Start(TIM_2);
+	uint32_t lastLink = 0;
+	bool linked = false;
 
 	while (1)
 	{
-		uint32_t mv = ADC_Read(PWR_SNS_AIN) * ADC_VREF / ADC_MAX;
+		uint32_t now = HAL_GetTick();
 
-		if (Button_Update(&gPwrButton) == BTN_Pressed && mv)
+		if (Button_Update(&gPwrButton) == BTN_Pressed)
 		{
 			MAIN_Powerdown();
 		}
 
-		//*
 		uint8_t bfr[8];
 		uint8_t read = CC1101_Rx(bfr, sizeof(bfr));
 		if (read)
 		{
-			UART_Tx(COM_UART, bfr, read);
-		}
-		/*/
-		static uint32_t tide = 0;
-		uint32_t now = HAL_GetTick();
-		if (now - tide > 500)
-		{
-			tide = now;
+			MSG_Remote_t rx;
+			if (MSG_RemoteUnpack(&rx, bfr, read))
+			{
+				linked = true;
+				lastLink = now;
+				GPIO_SET(LINK_LED_GPIO, LINK_LED_PIN);
 
-			uint8_t bfr[] = {
-					0x01,
-					0x02
-			};
-			CC1101_Tx(0, bfr, sizeof(bfr));
+				if (rx.ackRequest)
+				{
+					MSG_Tank_t tx = {
+						.health = 1,
+						.lowBatt = false,
+						.ready = true,
+					};
+					uint8_t written = MSG_TankPack(&tx, bfr);
+					CC1101_Tx(address, bfr, written);
+				}
+			}
 		}
-		//*/
+
+		if (linked && now - lastLink > LINK_TIMEOUT)
+		{
+			GPIO_RESET(LINK_LED_GPIO, LINK_LED_PIN);
+			linked = false;
+		}
 
 		CORE_Idle();
 	}
