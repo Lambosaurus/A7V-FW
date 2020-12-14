@@ -1,20 +1,27 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "Board.h"
+
 #include "Core.h"
 #include "GPIO.h"
-#include "Button.h"
-
 #include "UART.h"
 #include "CC1101.h"
 #include "ADC.h"
 #include "TIM.h"
+
 #include "Messages.h"
+#include "Button.h"
+#include "Timer.h"
 
 
-#define TX_PERIOD		100
-#define ACK_PERIOD		300
-#define LINK_TIMEOUT	500
+
+#define TX_PERIOD			100
+#define ACK_PERIOD			300
+#define LINK_TIMEOUT		500
+#define ACTIVITY_TIMEOUT	10000
+#define BATTERY_PERIOD		5000
+
+#define VBATT_LOW_MV		2400
 
 
 static Button_t gPwrButton;
@@ -70,18 +77,33 @@ int main(void)
 	CC1101_Init(&cc1101_config);
 	UART_Init(COM_UART, COM_BAUD);
 
-	uint32_t lastTx = 0;
-	uint32_t lastAckReq = 0;
-	uint32_t lastLink = 0;
-	bool linked = false;
+	Timer_t txTimer = { TX_PERIOD, 0 };
+	Timer_t ackRequestTimer = { ACK_PERIOD, 0 };
+	Timer_t linkTimer = { LINK_TIMEOUT, 0 };
+	Timer_t activityTimer = { ACTIVITY_TIMEOUT, ACTIVITY_TIMEOUT };
+	Timer_t batteryTimer = { BATTERY_PERIOD, BATTERY_PERIOD };
 
+	bool linked = false;
 	while (1)
 	{
-		uint32_t now = HAL_GetTick();
+		Timer_Tick(HAL_GetTick());
 
-		if (Button_Update(&gPwrButton) == BTN_Pressed)
+
+		if (Button_Update(&gPwrButton) == BTN_Pressed || Timer_IsElapsed(&activityTimer))
 		{
 			MAIN_Powerdown();
+		}
+
+		if (Button_Update(&gAltButton) == BTN_Pressed)
+		{
+			Timer_Reload(&activityTimer);
+		}
+
+		if (Timer_IsElapsed(&batteryTimer))
+		{
+			Timer_Reload(&batteryTimer);
+			uint32_t vbatt = AIN_DirectMv(ADC_Read(PWR_SNS_AIN));
+			bool vbattLow = vbatt < VBATT_LOW_MV;
 		}
 
 		uint8_t bfr[8];
@@ -92,20 +114,20 @@ int main(void)
 			if (MSG_TankUnpack(&rx, bfr, read))
 			{
 				linked = true;
-				lastLink = now;
+				Timer_Reload(&linkTimer);
 				GPIO_SET(LINK_LED_GPIO, LINK_LED_PIN);
 			}
 		}
 
-		if (now - lastTx > TX_PERIOD)
+		if (Timer_IsElapsed(&txTimer))
 		{
-			lastTx = now;
+			Timer_Reload(&txTimer);
 
 			MSG_Remote_t tx = { 0 };
 
-			if (now - lastAckReq > ACK_PERIOD)
+			if (Timer_IsElapsed(&ackRequestTimer))
 			{
-				lastAckReq = 0;
+				Timer_Reload(&ackRequestTimer);
 				tx.ackRequest = true;
 			}
 
@@ -113,7 +135,7 @@ int main(void)
 			CC1101_Tx(address, bfr, written);
 		}
 
-		if (linked && now - lastLink > LINK_TIMEOUT)
+		if (linked && Timer_IsElapsed(&linkTimer))
 		{
 			GPIO_RESET(LINK_LED_GPIO, LINK_LED_PIN);
 			linked = false;
