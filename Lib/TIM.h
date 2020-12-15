@@ -15,8 +15,10 @@ typedef void(*VoidFunction_t)(void);
 
 typedef struct {
 	TIM_TypeDef * Instance;
+#ifdef USE_TIM_IRQS
 	VoidFunction_t ReloadCallback;
 	VoidFunction_t PulseCallback[4];
+#endif //USE_TIM_IRQS
 } TIM_t;
 
 /*
@@ -26,8 +28,10 @@ typedef struct {
 void TIM_Init(TIM_t * tim, uint32_t frequency, uint16_t reload);
 void TIM_Deinit(TIM_t * tim);
 
+#ifdef USE_TIM_IRQS
 void TIM_OnReload(TIM_t * tim, VoidFunction_t callback);
 void TIM_OnPulse(TIM_t * tim, uint8_t ch, VoidFunction_t callback);
+#endif //USE_TIM_IRQS
 void TIM_SetPulse(TIM_t * tim, uint8_t ch, uint16_t pulse);
 void TIM_Start(TIM_t * tim);
 void TIM_Stop(TIM_t * tim);

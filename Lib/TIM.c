@@ -21,8 +21,11 @@
 
 static void TIMx_Init(TIM_t * tim);
 static void TIMx_Deinit(TIM_t * tim);
-static void TIM_IRQHandler(TIM_t * tim);
 static void TIM_Reload(TIM_t * tim);
+
+#ifdef USE_TIM_IRQS
+static void TIM_IRQHandler(TIM_t * tim);
+#endif //USE_TIM_IRQS
 
 static void TIM_EnableOCx(TIM_t * tim, uint8_t oc, uint32_t mode);
 
@@ -88,6 +91,7 @@ void TIM_Init(TIM_t * tim, uint32_t freq, uint16_t reload)
 	tim->Instance->PSC = (sysclk / freq) - 1;
 }
 
+#ifdef USE_TIM_IRQS
 void TIM_OnReload(TIM_t * tim, VoidFunction_t callback)
 {
 	__HAL_TIM_ENABLE_IT(tim, TIM_IT_UPDATE);
@@ -96,31 +100,27 @@ void TIM_OnReload(TIM_t * tim, VoidFunction_t callback)
 
 void TIM_OnPulse(TIM_t * tim, uint8_t ch, VoidFunction_t callback)
 {
-	if (ch < 4)
-	{
-		TIM_EnableOCx(tim, ch, TIM_OCMODE_ACTIVE);
-		// Note that the channels IT's are 1 << 1 through 1 << 4
-		__HAL_TIM_ENABLE_IT(tim, TIM_IT_CC1 << ch);
-		tim->PulseCallback[ch] = callback;
-	}
+	// WARN: This will fail horribly if ch is greater than 4.
+	TIM_EnableOCx(tim, ch, TIM_OCMODE_ACTIVE);
+	// Note that the channels IT's are 1 << 1 through 1 << 4
+	__HAL_TIM_ENABLE_IT(tim, TIM_IT_CC1 << ch);
+	tim->PulseCallback[ch] = callback;
 }
+#endif //USE_TIM_IRQS
 
 void TIM_EnablePwm(TIM_t * tim, uint8_t ch, GPIO_TypeDef * gpio, uint32_t pin, uint8_t af)
 {
-	if (ch < 4)
-	{
-		// TIM_CCMR1_OC1PE is the output compare preload
-		TIM_EnableOCx(tim, ch, TIM_OCMODE_PWM1 | TIM_CCMR1_OC1PE | TIM_OCFAST_ENABLE);
+	// TIM_CCMR1_OC1PE is the output compare preload
+	TIM_EnableOCx(tim, ch, TIM_OCMODE_PWM1 | TIM_CCMR1_OC1PE | TIM_OCFAST_ENABLE);
 
-		GPIO_InitTypeDef init = {
-				.Pin = pin,
-				.Pull = GPIO_NOPULL,
-				.Speed = GPIO_SPEED_FREQ_HIGH,
-				.Mode = GPIO_MODE_AF_PP,
-				.Alternate = af,
-		};
-		HAL_GPIO_Init(gpio, &init);
-	}
+	GPIO_InitTypeDef init = {
+			.Pin = pin,
+			.Pull = GPIO_NOPULL,
+			.Speed = GPIO_SPEED_FREQ_HIGH,
+			.Mode = GPIO_MODE_AF_PP,
+			.Alternate = af,
+	};
+	HAL_GPIO_Init(gpio, &init);
 }
 
 
@@ -322,6 +322,7 @@ static void TIMx_Deinit(TIM_t * tim)
  * INTERRUPT ROUTINES
  */
 
+#ifdef USE_TIM_IRQS
 static void TIM_IRQHandler(TIM_t * tim)
 {
 	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_CC1) != RESET)
@@ -350,6 +351,7 @@ static void TIM_IRQHandler(TIM_t * tim)
 		tim->ReloadCallback();
 	}
 }
+#endif //USE_TIM_IRQS
 
 #ifdef USE_TIM1
 void TIM1_BRK_UP_TRG_COM_IRQHandler(void)

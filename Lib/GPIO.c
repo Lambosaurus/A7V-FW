@@ -13,14 +13,17 @@
  * PRIVATE PROTOTYPES
  */
 
+#ifdef USE_GPIO_IRQS
 static inline void EXTIx_IRQHandler(int n);
 static void EXTIx_EnableIRQn(int n);
 static void EXTIx_DefaultHandler(void);
+#endif //USE_GPIO_IRQS
 
 /*
  * PRIVATE VARIABLES
  */
 
+#ifdef USE_GPIO_IRQS
 VoidFunction_t gCallback[16] = {
 	EXTIx_DefaultHandler,
 	EXTIx_DefaultHandler,
@@ -39,6 +42,7 @@ VoidFunction_t gCallback[16] = {
 	EXTIx_DefaultHandler,
 	EXTIx_DefaultHandler,
 };
+#endif //USE_GPIO_IRQS
 
 /*
  * PUBLIC FUNCTIONS
@@ -79,6 +83,7 @@ void GPIO_EnableInput(GPIO_TypeDef * gpio, uint32_t pin, uint32_t pullup)
 	HAL_GPIO_Init(gpio, &init);
 }
 
+#ifdef USE_GPIO_IRQS
 void GPIO_EnableIRQ(GPIO_TypeDef * gpio, uint32_t pin, uint32_t pullup, GPIO_IT_Dir_t dir, VoidFunction_t callback)
 {
 	int n = 0;
@@ -95,6 +100,7 @@ void GPIO_EnableIRQ(GPIO_TypeDef * gpio, uint32_t pin, uint32_t pullup, GPIO_IT_
 	HAL_GPIO_Init(gpio, &init);
 	EXTIx_EnableIRQn(n);
 }
+#endif //USE_GPIO_IRQS
 
 void GPIO_Disable(GPIO_TypeDef * gpio, uint32_t pin)
 {
@@ -111,6 +117,7 @@ void GPIO_Disable(GPIO_TypeDef * gpio, uint32_t pin)
  * PRIVATE FUNCTIONS
  */
 
+#ifdef USE_GPIO_IRQS
 static inline void EXTIx_IRQHandler(int n)
 {
 	if (__HAL_GPIO_EXTI_GET_IT(1 << n) != RESET)
@@ -138,13 +145,17 @@ static void EXTIx_EnableIRQn(int n)
 
 static void EXTIx_DefaultHandler(void)
 {
+#ifdef DEBUG
 	__BKPT();
+#endif
 }
+#endif //USE_GPIO_IRQS
 
 /*
  * INTERRUPT ROUTINES
  */
 
+#ifdef USE_GPIO_IRQS
 #if defined(USE_EXTI_0) || defined(USE_EXTI_1)
 void EXTI0_1_IRQHandler(void)
 {
@@ -213,3 +224,4 @@ void EXTI4_15_IRQHandler(void)
 #endif
 }
 #endif
+#endif //USE_GPIO_IRQS

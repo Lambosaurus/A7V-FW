@@ -27,8 +27,11 @@ typedef enum {
 void GPIO_EnableOutput(GPIO_TypeDef * gpio, uint32_t pin, GPIO_PinState state);
 void GPIO_EnableInput(GPIO_TypeDef * gpio, uint32_t pin, uint32_t pullup);
 void GPIO_Write(GPIO_TypeDef * gpio, uint32_t pin, GPIO_PinState state);
-void GPIO_EnableIRQ(GPIO_TypeDef * gpio, uint32_t pin, uint32_t pullup, GPIO_IT_Dir_t dir, VoidFunction_t callback);
 void GPIO_Disable(GPIO_TypeDef * gpio, uint32_t pin);
+
+#ifdef USE_GPIO_IRQS
+void GPIO_EnableIRQ(GPIO_TypeDef * gpio, uint32_t pin, uint32_t pullup, GPIO_IT_Dir_t dir, VoidFunction_t callback);
+#endif //USE_GPIO_IRQS
 
 /*
  * PUBLIC TYPES

@@ -18,4 +18,4 @@
 void CORE_Init(void);
 void CORE_Idle(void);
 
-#endif //LED_H
+#endif //CORE_H
