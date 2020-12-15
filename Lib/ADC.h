@@ -22,7 +22,7 @@ void ADC_Init(void);
 void ADC_Deinit(void);
 uint32_t ADC_Read(uint32_t channel);
 
-uint32_t AIN_DirectMv(uint32_t ain);
-uint32_t AIN_DividedMv(uint32_t ain, uint32_t rlow, uint32_t rhigh);
+uint32_t AIN_AinToMv(uint32_t ain);
+uint32_t AIN_AinToDivider(uint32_t ain, uint32_t rlow, uint32_t rhigh);
 
 #endif //ADC_H

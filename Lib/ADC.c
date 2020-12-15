@@ -80,12 +80,12 @@ void ADC_Deinit(void)
 	__HAL_RCC_ADC1_CLK_DISABLE();
 }
 
-uint32_t AIN_DividedMv(uint32_t ain, uint32_t rlow, uint32_t rhigh)
+uint32_t AIN_AinToDivider(uint32_t ain, uint32_t rlow, uint32_t rhigh)
 {
-	return AIN_DirectMv(ain) * (rhigh + rlow) / rlow;
+	return AIN_AinToMv(ain) * (rhigh + rlow) / rlow;
 }
 
-uint32_t AIN_DirectMv(uint32_t ain)
+uint32_t AIN_AinToMv(uint32_t ain)
 {
 	return (ain * ADC_VREF) / ADC_MAX;
 }
