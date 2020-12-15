@@ -32,6 +32,8 @@
  * PRIVATE PROTOTYPES
  */
 
+static bool Panel_CheckBattery(void);
+
 /*
  * PRIVATE VARIABLES
  */
@@ -81,7 +83,6 @@ void Panel_Recieve(MSG_Tank_t * msg)
 	gLink.linked = true;
 	gLink.ready = msg->ready;
 	Timer_Reload(&gLinkTimer);
-	GPIO_SET(LINK_LED_GPIO, LINK_LED_PIN);
 }
 
 void Panel_Update(void)
@@ -99,8 +100,7 @@ void Panel_Update(void)
 	if (Timer_IsElapsed(&gBatteryTimer))
 	{
 		Timer_Reload(&gBatteryTimer);
-		uint32_t vbatt = AIN_AinToMv(ADC_Read(PWR_SNS_AIN));
-		gState.batLow = vbatt < VBATT_LOW_MV;
+		gState.batLow = Panel_CheckBattery();
 
 		if (gState.batLow || gLink.batLow)
 		{
@@ -120,7 +120,6 @@ void Panel_Update(void)
 
 	if (gLink.linked && Timer_IsElapsed(&gLinkTimer))
 	{
-		GPIO_RESET(LINK_LED_GPIO, LINK_LED_PIN);
 		gLink.linked = false;
 	}
 
@@ -166,6 +165,12 @@ void Panel_Powerdown(void)
 /*
  * PRIVATE FUNCTIONS
  */
+
+static bool Panel_CheckBattery(void)
+{
+	uint32_t vbatt = AIN_AinToMv(ADC_Read(PWR_SNS_AIN));
+	return vbatt < VBATT_LOW_MV;
+}
 
 /*
  * INTERRUPT ROUTINES
