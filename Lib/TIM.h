@@ -56,5 +56,11 @@ extern TIM_t * TIM_16;
 #ifdef USE_TIM17
 extern TIM_t * TIM_17;
 #endif
+#ifdef USE_TIM21
+extern TIM_t * TIM_21;
+#endif
+#ifdef USE_TIM22
+extern TIM_t * TIM_22;
+#endif
 
 #endif //TIM_H

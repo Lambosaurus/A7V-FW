@@ -69,6 +69,19 @@ static TIM_t gTIM_17 = {
 };
 TIM_t * TIM_17 = &gTIM_17;
 #endif
+#ifdef USE_TIM21
+static TIM_t gTIM_21 = {
+	.Instance = TIM21
+};
+TIM_t * TIM_22 = &gTIM_22;
+#endif
+#ifdef USE_TIM22
+static TIM_t gTIM_22 = {
+	.Instance = TIM22
+};
+TIM_t * TIM_22 = &gTIM_22;
+#endif
+
 
 /*
  * PUBLIC FUNCTIONS
@@ -267,6 +280,20 @@ static void TIMx_Init(TIM_t * tim)
 		__HAL_RCC_TIM17_CLK_ENABLE();
 	}
 #endif
+#ifdef USE_TIM21
+	if (tim == TIM_21)
+	{
+		HAL_NVIC_EnableIRQ(TIM21_IRQn);
+		__HAL_RCC_TIM21_CLK_ENABLE();
+	}
+#endif
+#ifdef USE_TIM22
+	if (tim == TIM_22)
+	{
+		HAL_NVIC_EnableIRQ(TIM22_IRQn);
+		__HAL_RCC_TIM22_CLK_ENABLE();
+	}
+#endif
 }
 
 
@@ -314,6 +341,20 @@ static void TIMx_Deinit(TIM_t * tim)
 	{
 		HAL_NVIC_DisableIRQ(TIM17_IRQn);
 		__HAL_RCC_TIM17_CLK_DISABLE();
+	}
+#endif
+#ifdef USE_TIM21
+	if (tim == TIM_21)
+	{
+		HAL_NVIC_DisableIRQ(TIM21_IRQn);
+		__HAL_RCC_TIM21_CLK_DISABLE();
+	}
+#endif
+#ifdef USE_TIM22
+	if (tim == TIM_22)
+	{
+		HAL_NVIC_DisableIRQ(TIM22_IRQn);
+		__HAL_RCC_TIM22_CLK_DISABLE();
 	}
 #endif
 }
@@ -391,6 +432,18 @@ void TIM16_IRQHandler(void)
 void TIM17_IRQHandler(void)
 {
 	TIM_IRQHandler(TIM_17);
+}
+#endif
+#ifdef USE_TIM21
+void TIM21_IRQHandler(void)
+{
+	TIM_IRQHandler(TIM_21);
+}
+#endif
+#ifdef USE_TIM22
+void TIM22_IRQHandler(void)
+{
+	TIM_IRQHandler(TIM_22);
 }
 #endif
 
