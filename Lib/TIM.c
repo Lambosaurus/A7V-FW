@@ -323,6 +323,7 @@ static void TIMx_Deinit(TIM_t * tim)
  */
 
 #ifdef USE_TIM_IRQS
+
 static void TIM_IRQHandler(TIM_t * tim)
 {
 	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_CC1) != RESET)
@@ -351,7 +352,6 @@ static void TIM_IRQHandler(TIM_t * tim)
 		tim->ReloadCallback();
 	}
 }
-#endif //USE_TIM_IRQS
 
 #ifdef USE_TIM1
 void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
@@ -393,4 +393,6 @@ void TIM17_IRQHandler(void)
 	TIM_IRQHandler(TIM_17);
 }
 #endif
+
+#endif //USE_TIM_IRQS
 
