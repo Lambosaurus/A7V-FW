@@ -1,0 +1,24 @@
+#ifndef BUZZER_H
+#define BUZZER_H
+
+#include "Board.h"
+
+/*
+ * PUBLIC DEFINITIONS
+ */
+
+/*
+ * PUBLIC TYPES
+ */
+
+/*
+ * PUBLIC FUNCTIONS
+ */
+
+void Buzzer_Init(void);
+void Buzzer_Deinit(void);
+void Buzzer_Tone(uint32_t freq, uint32_t duration);
+bool Buzzer_IsBusy(void);
+void Buzzer_Update(void);
+
+#endif //BUZZER_H
