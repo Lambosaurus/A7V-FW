@@ -24,6 +24,7 @@ typedef struct {
 	uint32_t pin;
 	uint32_t changeTime;
 	ButtonState_t state;
+	bool heldState;
 } Button_t;
 
 /*
@@ -31,6 +32,7 @@ typedef struct {
  */
 
 void Button_Init(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin);
+void Button_InitAdv(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin, uint32_t pull, GPIO_PinState heldState);
 void Button_Deinit(Button_t * btn);
 ButtonState_t Button_Update(Button_t * btn);
 

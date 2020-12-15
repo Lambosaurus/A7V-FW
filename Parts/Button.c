@@ -1,5 +1,6 @@
 
 #include "Button.h"
+#include "GPIO.h"
 
 /*
  * PRIVATE DEFINITIONS
@@ -27,16 +28,22 @@ static inline bool Button_IsHeld(Button_t * btn);
 
 void Button_Init(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin)
 {
+	Button_InitAdv(btn, gpio, pin, GPIO_PULLUP, GPIO_PIN_SET);
+}
+
+void Button_InitAdv(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin, uint32_t pull, GPIO_PinState heldState)
+{
 	GPIO_InitTypeDef init = {
 		.Pin = pin,
 		.Mode = GPIO_MODE_INPUT,
-		.Pull = GPIO_PULLUP,
+		.Pull = pull,
 		.Speed = GPIO_SPEED_FREQ_LOW
 	};
 	HAL_GPIO_Init(gpio, &init);
 
 	btn->gpio = gpio;
 	btn->pin = pin;
+	btn->heldState = heldState;
 	btn->state = Button_IsHeld(btn) ? BTN_Held : BTN_None;
 	btn->changeTime = HAL_GetTick();
 }
@@ -79,7 +86,7 @@ ButtonState_t Button_Update(Button_t * btn)
 
 static inline bool Button_IsHeld(Button_t * btn)
 {
-	return !HAL_GPIO_ReadPin(btn->gpio, btn->pin);
+	return GPIO_READ(btn->gpio, btn->pin) == btn->heldState;
 }
 
 /*
