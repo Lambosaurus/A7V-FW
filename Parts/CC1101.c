@@ -9,7 +9,7 @@
  * PRIVATE DEFINITIONS
  */
 
-#define SPI_BITRATE	6000000
+#define SPI_BITRATE	6000000 // 6MHz
 
 #define ADDR_BURST	0x40
 #define ADDR_READ	0x80
@@ -146,7 +146,6 @@ static inline void CC1101_SPIStart(void);
 static inline void CC1101_SPIStop(void);
 static void CC1101_WriteRegs(uint8_t reg, const uint8_t * data, uint8_t count);
 static void CC1101_ReadRegs(uint8_t reg, uint8_t * data, uint8_t count);
-static void CC1101_WriteReg(uint8_t reg, uint8_t data);
 
 static void CC1101_GD0_IRQHandler(void);
 
@@ -337,7 +336,7 @@ static void CC1101_WriteConfig(CC1101Config_t * config)
     else if (dBm <= 5)   { pa = 0x05; }
     else if (dBm <= 7)   { pa = 0x06; }
     else 			     { pa = 0x07; }
-	CC1101_WriteReg(REG_FREND0, pa);
+	CC1101_WriteRegs(REG_FREND0, &pa, 1);
 
 	// These two parameters are consecutive
 	uint8_t bfr[] = {
@@ -451,17 +450,6 @@ static void CC1101_ReadRegs(uint8_t reg, uint8_t * data, uint8_t count)
 	CC1101_Select();
 	SPI_Tx(CC1101_SPI, &header, 1);
 	SPI_Rx(CC1101_SPI, data, count);
-	CC1101_Deselect();
-}
-
-static void CC1101_WriteReg(uint8_t reg, uint8_t value)
-{
-	uint8_t data[] = {
-			reg | ADDR_WRITE | ADDR_BURST,
-			value
-	};
-	CC1101_Select();
-	SPI_Tx(CC1101_SPI, data, sizeof(data));
 	CC1101_Deselect();
 }
 

@@ -116,12 +116,13 @@ uint8_t SPI_Xfer(SPI_t * spi, uint8_t byte)
 
 static uint32_t SPI_SelectPrescalar(SPI_t * spi, uint32_t target)
 {
-	uint32_t clk = HAL_RCC_GetPCLK1Freq();
+	// Div clock by 2, because the prescalars start at 2
+	uint32_t clk = HAL_RCC_GetPCLK1Freq() >> 1;
 	uint32_t actual;
 	uint32_t k;
 	for (k = 0; k <= 0x7; k++)
 	{
-		actual = clk >> (k + 1);
+		actual = clk >> k;
 		if (actual <= target)
 		{
 			break;
