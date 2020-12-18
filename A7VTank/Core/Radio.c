@@ -69,18 +69,6 @@ void Radio_Update(void)
 	}
 }
 
-void Radio_SetAddress(uint8_t address)
-{
-	gAddress = address;
-	//EEPROM_Write(0, &gAddress, sizeof(gAddress));
-	CC1101Config_t cc1101_config = {
-			.address = gAddress,
-			.channel = gAddress,
-			.power = DEFAULT_POWER,
-	};
-	CC1101_UpdateConfig(&cc1101_config);
-}
-
 /*
  * PRIVATE FUNCTIONS
  */

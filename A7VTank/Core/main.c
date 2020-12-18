@@ -2,11 +2,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "Board.h"
 #include "Core.h"
-#include "EEPROM.h"
 
 #include "Panel.h"
 #include "Radio.h"
 #include "Timer.h"
+#include "Address.h"
 
 #include "Buzzer.h"
 #include "LIS2DH.h"
@@ -14,7 +14,6 @@
 #include "Motors.h"
 #include "Servo.h"
 
-#define DEFAULT_ADDRESS		2
 
 int main(void)
 {
@@ -23,9 +22,7 @@ int main(void)
 	Panel_Init();
 	Panel_Powerup();
 
-	uint8_t address;
-	EEPROM_Read(0, &address, sizeof(address));
-	if (address == 0xFF || address == 0) { address = DEFAULT_ADDRESS; }
+	uint8_t address = ADDR_Load();
 
 	Radio_Init(address);
 	Buzzer_Init();

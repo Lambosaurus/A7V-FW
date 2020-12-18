@@ -7,6 +7,7 @@
 #include "Panel.h"
 #include "Timer.h"
 #include "Radio.h"
+#include "Address.h"
 
 
 int main(void)
@@ -15,7 +16,10 @@ int main(void)
 
 	Panel_Init();
 	Panel_Powerup();
-	Radio_Init();
+
+	uint8_t address = ADDR_Load();
+
+	Radio_Init(address);
 
 	while (1)
 	{
