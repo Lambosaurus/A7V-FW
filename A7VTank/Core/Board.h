@@ -25,11 +25,19 @@ extern "C" {
 
 #define PWR_HOLD_GPIO		GPIOA
 #define PWR_HOLD_PIN		GPIO_PIN_5
-#define PWR_BTN_GPIO		GPIOA
-#define PWR_BTN_PIN			GPIO_PIN_4
 #define PWR_SNS_EN_GPIO		GPIOA
 #define PWR_SNS_EN_PIN		GPIO_PIN_15
+
+#define BRD_REV1_MOD
+#ifdef BRD_REV1_MOD
+#define PWR_BTN_GPIO		GPIOA
+#define PWR_BTN_PIN			GPIO_PIN_8
+#define PWR_SNS_AIN			ADC_CHANNEL_4
+#else
+#define PWR_BTN_GPIO		GPIOA
+#define PWR_BTN_PIN			GPIO_PIN_4
 #define PWR_SNS_AIN			ADC_CHANNEL_8
+#endif
 
 #define LED_GRN_GPIO		GPIOC
 #define LED_GRN_PIN			GPIO_PIN_14
