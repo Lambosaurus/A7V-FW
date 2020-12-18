@@ -1,7 +1,6 @@
 
 #include "GPIO.h"
 #include "Core.h"
-#include "EEPROM.h"
 
 #include "CC1101.h"
 
@@ -14,7 +13,6 @@
  * PRIVATE DEFINITIONS
  */
 
-#define DEFAULT_ADDRESS		2
 #define DEFAULT_POWER		10
 
 #define TX_PERIOD			100
@@ -38,10 +36,9 @@ static uint8_t gAddress;
  * PUBLIC FUNCTIONS
  */
 
-void Radio_Init(void)
+void Radio_Init(uint8_t address)
 {
-	EEPROM_Read(0, &gAddress, sizeof(gAddress));
-	if (gAddress == 0xFF) { gAddress = DEFAULT_ADDRESS; }
+	gAddress = address;
 
 	CC1101Config_t cc1101_config = {
 			.address = gAddress,
@@ -75,8 +72,7 @@ void Radio_Update(void)
 void Radio_SetAddress(uint8_t address)
 {
 	gAddress = address;
-	EEPROM_Write(0, &gAddress, sizeof(gAddress));
-
+	//EEPROM_Write(0, &gAddress, sizeof(gAddress));
 	CC1101Config_t cc1101_config = {
 			.address = gAddress,
 			.channel = gAddress,

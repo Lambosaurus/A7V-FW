@@ -10,6 +10,8 @@
 
 #define TIM_CCMRx_MSK	(TIM_CCMR1_OC1M | TIM_CCMR1_CC1S | TIM_CCMR1_OC1FE | TIM_CCMR1_OC1PE)
 
+#define TIM_GET_IRQ_SOURCES(tim)	(tim->Instance->SR & tim->Instance->DIER)
+
 
 /*
  * PRIVATE TYPES
@@ -73,7 +75,7 @@ TIM_t * TIM_17 = &gTIM_17;
 static TIM_t gTIM_21 = {
 	.Instance = TIM21
 };
-TIM_t * TIM_22 = &gTIM_22;
+TIM_t * TIM_21 = &gTIM_21;
 #endif
 #ifdef USE_TIM22
 static TIM_t gTIM_22 = {
@@ -367,27 +369,28 @@ static void TIMx_Deinit(TIM_t * tim)
 
 static void TIM_IRQHandler(TIM_t * tim)
 {
-	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_CC1) != RESET)
+	uint32_t irqs = TIM_GET_IRQ_SOURCES(tim);
+	if(irqs & TIM_FLAG_CC1)
 	{
 		__HAL_TIM_CLEAR_IT(tim, TIM_IT_CC1);
 		tim->PulseCallback[0]();
 	}
-	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_CC2) != RESET)
+	if(irqs & TIM_FLAG_CC2)
 	{
 		__HAL_TIM_CLEAR_IT(tim, TIM_IT_CC2);
 		tim->PulseCallback[1]();
 	}
-	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_CC3) != RESET)
+	if(irqs & TIM_FLAG_CC3)
 	{
 		__HAL_TIM_CLEAR_IT(tim, TIM_IT_CC3);
 		tim->PulseCallback[2]();
 	}
-	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_CC4) != RESET)
+	if(irqs & TIM_FLAG_CC4)
 	{
 		__HAL_TIM_CLEAR_IT(tim, TIM_IT_CC4);
 		tim->PulseCallback[3]();
 	}
-	if(__HAL_TIM_GET_FLAG(tim, TIM_FLAG_UPDATE) != RESET)
+	if(irqs & TIM_FLAG_UPDATE)
 	{
 		__HAL_TIM_CLEAR_IT(tim, TIM_IT_UPDATE);
 		tim->ReloadCallback();

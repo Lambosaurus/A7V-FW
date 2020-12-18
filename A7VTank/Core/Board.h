@@ -10,6 +10,7 @@ extern "C" {
 #include "stdbool.h"
 
 #define USE_GPIO_IRQS
+#define USE_TIM_IRQS
 
 #define UART1_GPIO		GPIOA
 #define UART1_PINS		(GPIO_PIN_9 | GPIO_PIN_10)
@@ -43,7 +44,6 @@ extern "C" {
 #define USE_TIM22
 
 #define IR_UART				UART_1
-#define IR_BAUD				9600
 #define IR_STROBE_GPIO		GPIOA
 #define IR_STROBE_PIN		GPIO_PIN_7
 #define IR_STROBE_TIM		TIM_22
@@ -54,6 +54,8 @@ extern "C" {
 #define SERVO_EN_PIN		GPIO_PIN_11
 #define SERVO_SIG_GPIO		GPIOA
 #define SERVO_SIG_PIN		GPIO_PIN_12
+#define SERVO_TIM			TIM_21
+#define USE_TIM21
 
 #define CC1101_CS_GPIO		GPIOB
 #define CC1101_CS_PIN		GPIO_PIN_1
@@ -82,6 +84,7 @@ extern "C" {
 #define MOTOR2_I1_CH		1
 #define MOTOR2_I2_PIN		GPIO_PIN_0
 #define MOTOR2_I2_CH		0
+#define USE_TIM2
 
 #ifdef __cplusplus
 }
