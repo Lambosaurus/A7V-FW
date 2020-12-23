@@ -41,6 +41,7 @@ static Timer_t gAckReqTimer = { ACK_PERIOD, 0 };
 
 void Radio_Init(uint8_t address)
 {
+	gAddress = address;
 	CC1101Config_t cc1101_config = {
 			.address = gAddress,
 			.channel = gAddress,
