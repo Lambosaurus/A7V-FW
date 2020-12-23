@@ -33,6 +33,11 @@ uint8_t ADDR_Load(void)
 	return address;
 }
 
+void ADDR_Save(uint8_t address)
+{
+	EEPROM_Read(0, &address, sizeof(address));
+}
+
 /*
  * PRIVATE FUNCTIONS
  */

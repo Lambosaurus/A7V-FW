@@ -15,6 +15,7 @@
 void Panel_Init(void);
 void Panel_Powerup(void);
 void Panel_Recieve(MSG_Tank_t * msg);
+void Panel_GetInputs(MSG_Remote_t * msg);
 void Panel_Update(void);
 void Panel_Powerdown(void);
 

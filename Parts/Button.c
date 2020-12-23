@@ -28,7 +28,7 @@ static inline bool Button_IsHeld(Button_t * btn);
 
 void Button_Init(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin)
 {
-	Button_InitAdv(btn, gpio, pin, GPIO_PULLUP, GPIO_PIN_SET);
+	Button_InitAdv(btn, gpio, pin, GPIO_PULLUP, GPIO_PIN_RESET);
 }
 
 void Button_InitAdv(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin, uint32_t pull, GPIO_PinState heldState)

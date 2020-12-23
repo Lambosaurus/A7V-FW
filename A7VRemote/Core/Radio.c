@@ -74,6 +74,8 @@ void Radio_Update(void)
 			tx.ackRequest = true;
 		}
 
+		Panel_GetInputs(&tx);
+
 		uint8_t written = MSG_RemotePack(&tx, bfr);
 		CC1101_Tx(gAddress, bfr, written);
 	}
