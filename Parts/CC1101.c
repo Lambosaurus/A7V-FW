@@ -277,15 +277,25 @@ uint8_t CC1101_Rx(uint8_t * data, uint8_t count)
 
 		CC1101_SPIStart();
 		CC1101_ReadRegs(REG_FIFO, bfr, 2);
-		uint8_t size = bfr[0] - 1;
-		CC1101_ReadRegs(REG_FIFO, bfr+2, size);
-		CC1101_SPIStop();
-
-		if (size <= count)
+		if (bfr[0] == 0 || bfr[0] > (BUFFER_MAX-1))
 		{
-			memcpy(data, bfr+2, size);
-			read = size;
+			// If the length byte is zero, something is wrong.
+			// Reset the RX process.
+			CC1101_Command(CMD_SFRX);
+			CC1101_EnterRx();
 		}
+		else
+		{
+			// Read the remaining data.
+			uint8_t size = bfr[0] - 1;
+			CC1101_ReadRegs(REG_FIFO, bfr+2, size);
+			if (size <= count)
+			{
+				memcpy(data, bfr+2, size);
+				read = size;
+			}
+		}
+		CC1101_SPIStop();
 	}
 	return read;
 }
@@ -346,6 +356,7 @@ static void CC1101_WriteConfig(CC1101Config_t * config)
 	CC1101_WriteRegs(REG_ADDR, bfr, sizeof(bfr));
 }
 
+
 static void CC1101_EnterRx(void)
 {
 	uint8_t nop = CMD_SNOP;
@@ -403,7 +414,7 @@ static void CC1101_Reset(void)
 	CC1101_Deselect();
 	HAL_Delay(1);
 	CC1101_Command(CMD_SRES);
-	HAL_Delay(1);
+	HAL_Delay(5);
 }
 
 static void CC1101_Command(uint8_t cmd)
