@@ -92,17 +92,19 @@ TIM_t * TIM_22 = &gTIM_22;
 void TIM_Init(TIM_t * tim, uint32_t freq, uint16_t reload)
 {
 	TIMx_Init(tim);
-	uint32_t sysclk = HAL_RCC_GetPCLK1Freq();
 
 	uint32_t cr1 = tim->Instance->CR1;
 	cr1 &= ~(TIM_CR1_DIR | TIM_CR1_CMS | TIM_CR1_CKD | TIM_CR1_ARPE);
 	cr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE | TIM_CLOCKDIVISION_DIV1 | TIM_COUNTERMODE_UP;
 	tim->Instance->CR1 = cr1;
 
-	/* Set the Autoreload value */
-	tim->Instance->ARR = (uint32_t)reload;
+	TIM_SetFreq(tim, freq, reload);
+}
 
-	/* Set the Prescaler value */
+void TIM_SetFreq(TIM_t * tim, uint32_t freq, uint16_t reload)
+{
+	uint32_t sysclk = HAL_RCC_GetPCLK1Freq();
+	tim->Instance->ARR = (uint32_t)reload;
 	tim->Instance->PSC = (sysclk / freq) - 1;
 }
 

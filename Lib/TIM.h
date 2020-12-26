@@ -27,6 +27,7 @@ typedef struct {
 
 void TIM_Init(TIM_t * tim, uint32_t frequency, uint16_t reload);
 void TIM_Deinit(TIM_t * tim);
+void TIM_SetFreq(TIM_t * tim, uint32_t frequency, uint16_t reload);
 
 #ifdef USE_TIM_IRQS
 void TIM_OnReload(TIM_t * tim, VoidFunction_t callback);

@@ -51,8 +51,6 @@ int main(void)
 		Buzzer_Update();
 		IR_Update();
 
-
-
 		//if (Timer_IsElapsed(&fireTimer))
 		//{
 		//	Timer_Reload(&fireTimer);
