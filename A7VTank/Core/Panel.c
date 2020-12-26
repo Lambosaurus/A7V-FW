@@ -189,8 +189,8 @@ static void Panel_Fire(void)
 
 static void Panel_SetThrottle(int8_t x, int8_t y)
 {
-	int16_t left = x + y;
-	int16_t right = x - y;
+	int16_t left = (y + x) * 2;
+	int16_t right = (y - x) * 2;
 	Motor_Throttle(left, right);
 }
 

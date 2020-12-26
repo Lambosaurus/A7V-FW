@@ -274,27 +274,31 @@ uint8_t CC1101_Rx(uint8_t * data, uint8_t count)
 	if (CC1101_RxReady())
 	{
 		uint8_t bfr[BUFFER_MAX];
-
 		CC1101_SPIStart();
-		CC1101_ReadRegs(REG_FIFO, bfr, 2);
-		if (bfr[0] == 0 || bfr[0] > (BUFFER_MAX-1))
+		uint8_t fifo_size = CC1101_ReadStatus(STAT_RXBYTES);
+
+		if (fifo_size > 2)
 		{
-			// If the length byte is zero, something is wrong.
-			// Reset the RX process.
-			CC1101_Command(CMD_SFRX);
-			CC1101_EnterRx();
-		}
-		else
-		{
-			// Read the remaining data.
-			uint8_t size = bfr[0] - 1;
-			CC1101_ReadRegs(REG_FIFO, bfr+2, size);
-			if (size <= count)
+			CC1101_ReadRegs(REG_FIFO, bfr, 2);
+			if (bfr[0] == 0 || bfr[0] > (BUFFER_MAX-1))
 			{
-				memcpy(data, bfr+2, size);
-				read = size;
+				// If the length byte is zero, something is wrong.
+				// Reset the RX process.
+				CC1101_Command(CMD_SFRX);
+				CC1101_EnterRx();
+			}
+			else
+			{
+				uint8_t size = bfr[0] - 1;
+				CC1101_ReadRegs(REG_FIFO, bfr+2, size);
+				if (size <= count)
+				{
+					memcpy(data, bfr+2, size);
+					read = size;
+				}
 			}
 		}
+
 		CC1101_SPIStop();
 	}
 	return read;
