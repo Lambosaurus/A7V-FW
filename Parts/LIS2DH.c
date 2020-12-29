@@ -62,6 +62,7 @@
 #define CR1_XYZ_EN		(CR1_X_EN | CR1_Y_EN | CR1_Z_EN)
 #define CR1_LP_EN		0x08
 
+#define CR1_ODR_POWERDOWN	0x00
 #define CR1_ODR_1HZ			0x10
 #define CR1_ODR_10HZ		0x20
 #define CR1_ODR_25HZ		0x30
@@ -72,6 +73,11 @@
 #define CR1_LPODR_1620HZ	0x80
 #define CR1_LPODR_5376HZ	0x90
 #define CR1_ODR_1334HZ		0x90
+
+#define CR2_HPM_NORM_RST	0x00
+#define CR2_HPM_REFERENCE	0x40
+#define CR2_HPM_NORM		0x80
+#define CR2_HPM_AUTO_RST	0xC0
 
 #define CR2_HP_DATA			0x08
 #define CR2_HP_CLICK		0x04
@@ -97,8 +103,24 @@
 #define CR4_FS_8G			0x20
 #define CR4_FS_16G			0x30
 
+#define CR5_BOOT			0x80
+#define CR5_FIFO_EN			0x40
+#define CR5_I1_LIR			0x08
+#define CR5_I1_D4D			0x04
+#define CR5_I2_LIR			0x02
+#define CR5_I2_D4D			0x01
+
+#define CR6_I2_CLICK		0x80
+#define CR6_I1_INT1			0x40
+#define CR6_I2_INT2			0x20
+#define CR6_I2_BOOT			0x10
+#define CR6_I2_ACT			0x08
+#define CR6_L_ACTIVE		0x02
+
+#define INT_CFG_OR			0x00
 #define INT_CFG_AND			0x80
-#define INT_CFG_6D			0x40
+#define INT_CFG_6D_MOV		0x40
+#define INT_CFG_6D_POS		(INT_CFG_6D_MOV | INT_CFG_AND)
 #define INT_CFG_Z_H			0x20
 #define INT_CFG_Z_L			0x10
 #define INT_CFG_Y_H			0x08
@@ -135,8 +157,8 @@ static uint8_t LIS2_CR4_GetFS(uint8_t scale_g);
  */
 
 static struct {
-	uint8_t data_shift;
 	uint8_t scale_g;
+	uint8_t data_scale;
 	bool int_set;
 } gCfg;
 
@@ -147,7 +169,8 @@ static struct {
 bool LIS2_Init(const LIS2_Config_t * cfg)
 {
 	GPIO_EnableOutput(LIS2_CS_GPIO, LIS2_CS_PIN, GPIO_PIN_SET);
-	GPIO_EnableIRQ(LIS2_INT_GPIO, LIS2_INT_PIN, GPIO_NOPULL, GPIO_IT_RISING, LIS2_INT_IRQHandler);
+	gCfg.int_set = false;
+	GPIO_EnableIRQ(LIS2_INT_GPIO, LIS2_INT_PIN, GPIO_NOPULL, GPIO_IT_FALLING, LIS2_INT_IRQHandler);
 
 	LIS2_SPIStart();
 
@@ -155,20 +178,18 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 	if (success)
 	{
 		uint8_t ctrl[6] = {0};
+		uint8_t i1cfg = 0;
 
 		bool low_power = false;
 		switch (cfg->resolution)
 		{
 		case LIS2_Res_8B:
 			low_power = true;
-			gCfg.data_shift = 8;
 			ctrl[0] |= CR1_LP_EN;
 			break;
 		case LIS2_Res_10B:
-			gCfg.data_shift = 6;
 			break;
 		case LIS2_Res_12B:
-			gCfg.data_shift = 4;
 			ctrl[3] |= CR4_HR_EN;
 			break;
 		}
@@ -183,15 +204,19 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 			// fallthrough
 		case 2:
 			threshold /= 16;
+			gCfg.data_scale = 1;
 			break;
 		case 4:
 			threshold /= 32;
+			gCfg.data_scale = 2;
 			break;
 		case 8:
 			threshold /= 62;
+			gCfg.data_scale = 4;
 			break;
 		case 16:
 			threshold /= 186;
+			gCfg.data_scale = 12;
 			break;
 		}
 
@@ -201,25 +226,36 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 			break;
 		case LIS2_IntSrc_DataReady:
 			ctrl[2] |= CR3_I1_DRDY1;
+			//ctrl[3] |= CR4_BDU_EN;
 			break;
 		case LIS2_IntSrc_Shock:
-			LIS2_WriteReg( REG_INT1_THS, threshold );
-			ctrl[1] |= CR2_HP_INT1 | CR2_HPCF_ODR_50;
+			ctrl[1] |= CR2_HP_INT1 | CR2_HPM_NORM | CR2_HPCF_ODR_50; // | CR2_HPCF_ODR_400;
 			ctrl[2] |= CR3_I1_AOI1;
-			LIS2_WriteReg( REG_INT1_CFG, INT_CFG_XYZ_H );
+			i1cfg |= INT_CFG_OR | INT_CFG_XYZ_H;
 			break;
 		}
 
 		ctrl[0] |= CR1_XYZ_EN | LIS2_CR1_GetODR(cfg->frequency, low_power);
 		ctrl[3] |= LIS2_CR4_GetFS(gCfg.scale_g); //| CR4_BDU_EN;
+		ctrl[5] |= CR6_L_ACTIVE;
 
+		/*
+		ctrl[0] = CR1_ODR_200HZ | CR1_Z_EN | CR1_Y_EN | CR1_X_EN;
+		ctrl[1] = 0;
+		ctrl[2] = CR3_I1_DRDY1;
+		ctrl[3] = CR4_FS_2G | CR4_HR_EN;
+		ctrl[4] = 0x00;
+		ctrl[5] = CR6_L_ACTIVE;
+		*/
 
 		LIS2_WriteRegs(REG_CTRL1, ctrl, sizeof(ctrl));
-
-		gCfg.int_set = false;
+		LIS2_WriteReg(REG_INT1_THS, threshold );
+		LIS2_WriteReg(REG_INT1_CFG, i1cfg );
+		LIS2_WriteReg(REG_INT1_DUR, 0 );
 	}
 
 	LIS2_SPIStop();
+
 	return success;
 }
 
@@ -235,31 +271,23 @@ void LIS2_Deinit(void)
 
 bool LIS2_IsIntSet(void)
 {
-	return gCfg.int_set; //GPIO_READ(LIS2_INT_GPIO, LIS2_INT_PIN);
+	return gCfg.int_set || !GPIO_READ(LIS2_INT_GPIO, LIS2_INT_PIN);
 }
 
 void LIS2_Read(LIS2_Accel_t * acc)
 {
 	gCfg.int_set = false;
 
-	uint8_t data[7];
+	uint8_t data[6];
 	LIS2_SPIStart();
-	LIS2_ReadRegs(REG_STATUS, data, sizeof(data));
+	LIS2_ReadRegs(REG_OUT_X_L, data, sizeof(data));
 	LIS2_SPIStop();
 
-	uint32_t shift = gCfg.data_shift;
-	if (shift == 8)
-	{
-		acc->x = (int16_t)(data[2]);
-		acc->y = (int16_t)(data[4]);
-		acc->z = (int16_t)(data[6]);
-	}
-	else
-	{
-		acc->x = (int16_t)(data[1] | (data[2] << 8)) >> shift;
-		acc->y = (int16_t)(data[3] | (data[4] << 8)) >> shift;
-		acc->z = (int16_t)(data[5] | (data[6] << 8)) >> shift;
-	}
+	uint16_t scale = gCfg.data_scale;
+
+	acc->x = ((int16_t)(data[0] | (data[1] << 8)) >> 4) * scale;
+	acc->y = ((int16_t)(data[2] | (data[3] << 8)) >> 4) * scale;
+	acc->z = ((int16_t)(data[4] | (data[5] << 8)) >> 4) * scale;
 }
 
 /*
@@ -289,7 +317,6 @@ static uint8_t LIS2_CR1_GetODR(uint16_t f, bool lp)
 
 static uint8_t LIS2_CR4_GetFS(uint8_t s)
 {
-
 	if 			(s < 4) 	{ return CR4_FS_2G;  }
 	else if 	(s < 8) 	{ return CR4_FS_4G;  }
 	else if 	(s < 16) 	{ return CR4_FS_8G;  }
@@ -339,7 +366,6 @@ static inline void LIS2_SPIStop(void)
 static inline void LIS2_Select(void)
 {
 	GPIO_RESET(LIS2_CS_GPIO, LIS2_CS_PIN);
-	HAL_Delay(1);
 }
 
 static inline void LIS2_Deselect(void)

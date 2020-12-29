@@ -17,6 +17,7 @@ void Panel_Powerup(void);
 void Panel_Recieve(MSG_Remote_t * msg);
 void Panel_Update(void);
 void Panel_Powerdown(void);
+void Panel_Hit(void);
 
 
 /*

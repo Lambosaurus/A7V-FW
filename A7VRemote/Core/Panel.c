@@ -30,9 +30,9 @@
  */
 
 typedef enum {
-	PANEL_BTN_Alt,
-	PANEL_BTN_Left,
-	PANEL_BTN_Right,
+	PANEL_BTN_Alt 	= 0x01,
+	PANEL_BTN_Left 	= 0x02,
+	PANEL_BTN_Right = 0x04,
 } PanelButton_t;
 
 /*
@@ -193,6 +193,11 @@ static bool Panel_CheckBattery(void)
 	return vbatt < VBATT_LOW_MV;
 }
 
+static void Panel_AssumeFired(void)
+{
+	gLink.ready = false;
+}
+
 static void Panel_UpdateInputs(void)
 {
 	bool activity = false;
@@ -206,6 +211,7 @@ static void Panel_UpdateInputs(void)
 	{
 		activity = true;
 		gState.btns |= PANEL_BTN_Alt;
+		Panel_AssumeFired();
 	}
 	if (Button_Update(&gLeftButton) == BTN_Pressed)
 	{

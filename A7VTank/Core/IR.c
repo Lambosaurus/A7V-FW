@@ -65,7 +65,7 @@ void IR_Update(void)
 	uint8_t rx;
 	while (UART_Rx(IR_UART, &rx, 1))
 	{
-		if (gLastRx == BURST_START)
+		if (gLastRx == BURST_START && rx != gAddress)
 		{
 			gIsHit = true;
 		}

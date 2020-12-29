@@ -9,6 +9,7 @@
 #include "Radio.h"
 #include "Motors.h"
 #include "IR.h"
+#include "Sound.h"
 
 
 /*
@@ -18,12 +19,14 @@
 #define ACTIVITY_TIMEOUT	30000
 #define BATTERY_PERIOD		2000
 #define LINK_TIMEOUT		500
-#define READY_TIMEOUT		2000
+#define READY_TIMEOUT		1500
 #define HIT_TIMEOUT			3000
 
 #define CELL_LOW_MV			1100
 #define CELL_COUNT			4
 #define VBATT_LOW_MV		(CELL_LOW_MV * CELL_COUNT)
+
+#define NOTE_COUNT(notes)	(sizeof(notes) / sizeof(Note_t))
 
 /*
  * PRIVATE TYPES
@@ -36,12 +39,6 @@ typedef enum {
 	LED_YEL = LED_GRN | LED_RED,
 } LEDColor_t;
 
-typedef enum {
-	Task_None,
-	Task_FireIR,
-	Task_FireSound,
-	Task_HitSound,
-} Task_t;
 
 /*
  * PRIVATE PROTOTYPES
@@ -68,7 +65,6 @@ static struct {
 	uint8_t health;
 	bool ready;
 	bool linked;
-	Task_t task;
 } gState = { 0 };
 
 /*
@@ -83,8 +79,6 @@ void Panel_Init(void)
 
 	GPIO_EnableOutput(LED_RED_GPIO, LED_RED_PIN, GPIO_PIN_RESET);
 	GPIO_EnableOutput(LED_GRN_GPIO, LED_GRN_PIN, GPIO_PIN_RESET);
-
-	gState.task = Task_None;
 }
 
 void Panel_Recieve(MSG_Remote_t * msg)
@@ -103,17 +97,9 @@ void Panel_Recieve(MSG_Remote_t * msg)
 
 	if (msg->altButton)
 	{
-		if (gState.task == Task_None && gState.ready)
+		if (gState.ready)
 		{
 			Panel_Fire();
-		}
-	}
-	if (gState.task == Task_FireIR)
-	{
-		if (!IR_IsBusy())
-		{
-			gState.task = Task_None;
-			//gState.task = Task_FireSound;
 		}
 	}
 
@@ -146,6 +132,7 @@ void Panel_Update(void)
 	if (!gState.ready && Timer_IsElapsed(&gReadyTimer))
 	{
 		gState.ready = true;
+		Sound_Queue(Sound_Reload);
 	}
 
 	Panel_SetLEDs( gState.linked ? LED_GRN : LED_BLK );
@@ -176,6 +163,11 @@ void Panel_Powerdown(void)
 	while(1);
 }
 
+void Panel_Hit(void)
+{
+	Sound_Queue(Sound_Hit);
+}
+
 /*
  * PRIVATE FUNCTIONS
  */
@@ -185,6 +177,7 @@ static void Panel_Fire(void)
 	gState.ready = false;
 	Timer_Reload(&gReadyTimer);
 	IR_Fire();
+	Sound_Queue(Sound_Fire);
 }
 
 static void Panel_SetThrottle(int8_t x, int8_t y)
