@@ -10,6 +10,7 @@
 #include "Motors.h"
 #include "IR.h"
 #include "Sound.h"
+#include "Turret.h"
 
 
 /*
@@ -27,6 +28,7 @@
 #define VBATT_LOW_MV		(CELL_LOW_MV * CELL_COUNT)
 
 #define NOTE_COUNT(notes)	(sizeof(notes) / sizeof(Note_t))
+
 
 /*
  * PRIVATE TYPES
@@ -103,6 +105,7 @@ void Panel_Recieve(MSG_Remote_t * msg)
 		}
 	}
 
+	Turret_SetRate(msg->right.x);
 	Panel_SetThrottle(msg->left.x, msg->left.y);
 
 	Timer_Reload(&gLinkTimer);
@@ -127,6 +130,7 @@ void Panel_Update(void)
 	{
 		gState.linked = false;
 		Motor_Stop();
+		Turret_Stop();
 	}
 
 	if (!gState.ready && Timer_IsElapsed(&gReadyTimer))
@@ -176,6 +180,7 @@ static void Panel_Fire(void)
 {
 	gState.ready = false;
 	Timer_Reload(&gReadyTimer);
+	Sound_Halt();
 	IR_Fire();
 	Sound_Queue(Sound_Fire);
 }

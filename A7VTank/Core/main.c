@@ -12,7 +12,7 @@
 #include "LIS2DH.h"
 #include "IR.h"
 #include "Motors.h"
-#include "Servo.h"
+#include "Turret.h"
 
 
 int main(void)
@@ -27,7 +27,7 @@ int main(void)
 	Radio_Init(address);
 	Sound_Init();
 	Motor_Init();
-	Servo_Init();
+	Turret_Init();
 
 	IR_Init(address);
 
@@ -48,6 +48,7 @@ int main(void)
 		Panel_Update();
 		Sound_Update();
 		IR_Update();
+		Turret_Update();
 
 		if (IR_IsHit())
 		{

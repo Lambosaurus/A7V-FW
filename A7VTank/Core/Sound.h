@@ -24,6 +24,7 @@ typedef enum {
 void Sound_Init(void);
 void Sound_Deinit(void);
 void Sound_Update(void);
+void Sound_Halt(void);
 void Sound_Queue(Sound_t sound);
 
 #endif //SOUND_H

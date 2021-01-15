@@ -195,7 +195,7 @@ static bool Panel_CheckBattery(void)
 
 static void Panel_AssumeFired(void)
 {
-	gLink.ready = false;
+	//gLink.ready = false;
 }
 
 static void Panel_UpdateInputs(void)
