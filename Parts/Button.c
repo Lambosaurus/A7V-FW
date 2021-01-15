@@ -86,7 +86,7 @@ ButtonState_t Button_Update(Button_t * btn)
 
 static inline bool Button_IsHeld(Button_t * btn)
 {
-	return GPIO_READ(btn->gpio, btn->pin) == btn->heldState;
+	return GPIO_Read(btn->gpio, btn->pin) == btn->heldState;
 }
 
 /*

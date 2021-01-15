@@ -140,7 +140,7 @@ void Panel_Update(void)
 	else
 	{
 		GPIO_Write(LINK_LED_GPIO, LINK_LED_PIN, gLink.linked);
-		GPIO_SET(PWR_LED_GPIO, PWR_LED_PIN);
+		GPIO_Set(PWR_LED_GPIO, PWR_LED_PIN);
 	}
 
 	GPIO_Write(READY_LED_GPIO, READY_LED_PIN, gLink.ready && gLink.linked);
@@ -151,7 +151,7 @@ void Panel_Powerup(void)
 	if (Button_Update(&gPwrButton) & BTN_Held)
 	{
 		// Ensure power button is down before we run
-		GPIO_SET(PWR_HOLD_GPIO, PWR_HOLD_PIN);
+		GPIO_Set(PWR_HOLD_GPIO, PWR_HOLD_PIN);
 	}
 	else
 	{
@@ -167,7 +167,7 @@ void Panel_Powerdown(void)
 		// wait for button up - otherwise the device may reboot
 		CORE_Idle();
 	}
-	GPIO_RESET(PWR_HOLD_GPIO, PWR_HOLD_PIN);
+	GPIO_Reset(PWR_HOLD_GPIO, PWR_HOLD_PIN);
 	while(1);
 }
 

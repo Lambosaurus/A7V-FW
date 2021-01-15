@@ -321,7 +321,7 @@ void CC1101_Tx(uint8_t dest, uint8_t * data, uint8_t count)
 
 bool CC1101_RxReady(void)
 {
-	return GPIO_READ(CC1101_GD0_GPIO, CC1101_GD0_PIN);
+	return GPIO_Read(CC1101_GD0_GPIO, CC1101_GD0_PIN);
 }
 
 int16_t CC1101_GetRSSI(void)
@@ -470,12 +470,12 @@ static void CC1101_ReadRegs(uint8_t reg, uint8_t * data, uint8_t count)
 
 static bool CC1101_Select(void)
 {
-	GPIO_RESET(CC1101_CS_GPIO, CC1101_CS_PIN);
+	GPIO_Reset(CC1101_CS_GPIO, CC1101_CS_PIN);
 
 	uint32_t now = HAL_GetTick();
 	while (HAL_GetTick() - now < 2)
 	{
-		if (!GPIO_READ(CC1101_MISO_GPIO, CC1101_MISO_PIN))
+		if (!GPIO_Read(CC1101_MISO_GPIO, CC1101_MISO_PIN))
 		{
 			return true;
 		}
@@ -485,7 +485,7 @@ static bool CC1101_Select(void)
 
 static inline void CC1101_Deselect(void)
 {
-	GPIO_SET(CC1101_CS_GPIO, CC1101_CS_PIN);
+	GPIO_Set(CC1101_CS_GPIO, CC1101_CS_PIN);
 }
 
 /*

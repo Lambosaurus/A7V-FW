@@ -102,13 +102,13 @@ void TIM_Init(TIM_t * tim, uint32_t freq, uint16_t reload)
 	TIM_SetReload(tim, reload);
 }
 
-void TIM_SetFreq(TIM_t * tim, uint32_t freq, uint16_t reload)
+void TIM_SetFreq(TIM_t * tim, uint32_t freq)
 {
 	uint32_t sysclk = HAL_RCC_GetPCLK1Freq();
 	tim->Instance->PSC = (sysclk / freq) - 1;
 }
 
-void TIM_SetReload(TIM_t * tim, uint16_t * reload)
+void TIM_SetReload(TIM_t * tim, uint16_t reload)
 {
 	tim->Instance->ARR = (uint32_t)reload;
 }

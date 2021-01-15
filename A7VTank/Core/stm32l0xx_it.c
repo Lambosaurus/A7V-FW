@@ -28,11 +28,4 @@ void PendSV_Handler(void)
 {
 }
 
-void SysTick_Handler(void)
-{
-	HAL_IncTick();
-}
-
-
-
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

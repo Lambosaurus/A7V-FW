@@ -78,10 +78,10 @@ void Servo_SetPulse(int16_t offset)
 
 static void Servo_TimerReloadISR(void)
 {
-	GPIO_SET(SERVO_SIG_GPIO, SERVO_SIG_PIN);
+	GPIO_Set(SERVO_SIG_GPIO, SERVO_SIG_PIN);
 }
 
 static void Servo_TimerPulseISR(void)
 {
-	GPIO_RESET(SERVO_SIG_GPIO, SERVO_SIG_PIN);
+	GPIO_Reset(SERVO_SIG_GPIO, SERVO_SIG_PIN);
 }

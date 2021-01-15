@@ -147,7 +147,7 @@ void Panel_Powerup(void)
 	if (Button_Update(&gPwrButton) & BTN_Held)
 	{
 		// Ensure power button is down before we run
-		GPIO_SET(PWR_HOLD_GPIO, PWR_HOLD_PIN);
+		GPIO_Set(PWR_HOLD_GPIO, PWR_HOLD_PIN);
 	}
 	else
 	{
@@ -163,7 +163,7 @@ void Panel_Powerdown(void)
 		// wait for button up - otherwise the device may reboot
 		CORE_Idle();
 	}
-	GPIO_RESET(PWR_HOLD_GPIO, PWR_HOLD_PIN);
+	GPIO_Reset(PWR_HOLD_GPIO, PWR_HOLD_PIN);
 	while(1);
 }
 
@@ -200,11 +200,11 @@ static void Panel_SetLEDs(LEDColor_t color)
 
 static bool Panel_CheckBattery(void)
 {
-	GPIO_SET(PWR_SNS_EN_GPIO, PWR_SNS_EN_PIN);
+	GPIO_Set(PWR_SNS_EN_GPIO, PWR_SNS_EN_PIN);
 	ADC_Init();
 	uint32_t vbatt = AIN_AinToDivider(ADC_Read(PWR_SNS_AIN), 100, 100);
 	ADC_Deinit();
-	GPIO_RESET(PWR_SNS_EN_GPIO, PWR_SNS_EN_PIN);
+	GPIO_Reset(PWR_SNS_EN_GPIO, PWR_SNS_EN_PIN);
 	return vbatt < VBATT_LOW_MV;
 }
 

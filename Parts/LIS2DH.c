@@ -271,7 +271,7 @@ void LIS2_Deinit(void)
 
 bool LIS2_IsIntSet(void)
 {
-	return gCfg.int_set || !GPIO_READ(LIS2_INT_GPIO, LIS2_INT_PIN);
+	return gCfg.int_set || !GPIO_Read(LIS2_INT_GPIO, LIS2_INT_PIN);
 }
 
 void LIS2_Read(LIS2_Accel_t * acc)
@@ -365,12 +365,12 @@ static inline void LIS2_SPIStop(void)
 
 static inline void LIS2_Select(void)
 {
-	GPIO_RESET(LIS2_CS_GPIO, LIS2_CS_PIN);
+	GPIO_Reset(LIS2_CS_GPIO, LIS2_CS_PIN);
 }
 
 static inline void LIS2_Deselect(void)
 {
-	GPIO_SET(LIS2_CS_GPIO, LIS2_CS_PIN);
+	GPIO_Set(LIS2_CS_GPIO, LIS2_CS_PIN);
 }
 
 /*
