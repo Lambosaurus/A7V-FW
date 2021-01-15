@@ -129,7 +129,7 @@ void Buzzer_StartNote(const Note_t * note)
 	else
 	{
 		TIM_SetPulse(BUZZER_TIM, BUZZER_TIM_CH, 5);
-		TIM_SetFreq(BUZZER_TIM, note->freq * 10, 10);
+		TIM_SetFreq(BUZZER_TIM, note->freq * 10);
 	}
 	TIM_Start(BUZZER_TIM);
 }
