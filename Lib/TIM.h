@@ -27,15 +27,22 @@ typedef struct {
 
 void TIM_Init(TIM_t * tim, uint32_t frequency, uint16_t reload);
 void TIM_Deinit(TIM_t * tim);
-void TIM_SetFreq(TIM_t * tim, uint32_t frequency, uint16_t reload);
+void TIM_SetFreq(TIM_t * tim, uint16_t reload);
+void TIM_SetReload(TIM * tim, uint32_t reload);
 
 #ifdef USE_TIM_IRQS
 void TIM_OnReload(TIM_t * tim, VoidFunction_t callback);
 void TIM_OnPulse(TIM_t * tim, uint8_t ch, VoidFunction_t callback);
 #endif //USE_TIM_IRQS
+
 void TIM_SetPulse(TIM_t * tim, uint8_t ch, uint16_t pulse);
 void TIM_Start(TIM_t * tim);
 void TIM_Stop(TIM_t * tim);
+
+static inline uint32_t TIM_GetCounter(TIM_t * tim)
+{
+	return tim->Instance->CNT;
+}
 
 void TIM_EnablePwm(TIM_t * tim, uint8_t ch, GPIO_TypeDef * gpio, uint32_t pin, uint8_t af);
 

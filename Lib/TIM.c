@@ -98,14 +98,19 @@ void TIM_Init(TIM_t * tim, uint32_t freq, uint16_t reload)
 	cr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE | TIM_CLOCKDIVISION_DIV1 | TIM_COUNTERMODE_UP;
 	tim->Instance->CR1 = cr1;
 
-	TIM_SetFreq(tim, freq, reload);
+	TIM_SetFreq(tim, freq);
+	TIM_SetReload(tim, reload);
 }
 
 void TIM_SetFreq(TIM_t * tim, uint32_t freq, uint16_t reload)
 {
 	uint32_t sysclk = HAL_RCC_GetPCLK1Freq();
-	tim->Instance->ARR = (uint32_t)reload;
 	tim->Instance->PSC = (sysclk / freq) - 1;
+}
+
+void TIM_SetReload(TIM_t * tim, uint16_t * reload)
+{
+	tim->Instance->ARR = (uint32_t)reload;
 }
 
 #ifdef USE_TIM_IRQS
