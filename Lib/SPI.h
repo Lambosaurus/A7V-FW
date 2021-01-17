@@ -1,8 +1,7 @@
 #ifndef SPI_H
 #define SPI_H
 
-#include "stm32l0xx_hal.h"
-#include "Board.h"
+#include "STM32X.h"
 
 /*
  * EXAMPLE BOARD DEFINITION

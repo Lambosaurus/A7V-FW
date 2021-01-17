@@ -1,6 +1,6 @@
 
 #include "EEPROM.h"
-#include "string.h"
+#include <string.h>
 
 /*
  * PRIVATE DEFINITIONS

@@ -1,7 +1,7 @@
 #ifndef TIM_H
 #define TIM_H
 
-#include "Board.h"
+#include "STM32X.h"
 
 /*
  * EXAMPLE BOARD DEFINITION
