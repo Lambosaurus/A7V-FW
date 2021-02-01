@@ -39,7 +39,7 @@
 		<link>
 			<name>Lib</name>
 			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Lib</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/STM32X/Lib</locationURI>
 		</link>
 		<link>
 			<name>Parts</name>
