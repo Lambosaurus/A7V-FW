@@ -26,16 +26,20 @@
 
 static void IR_StartStrobe(void);
 static void IR_StopStrobe(void);
+static inline uint8_t IR_Checksum(uint8_t addr);
 
 /*
  * PRIVATE VARIABLES
  */
 
 static bool gFiring = false;
-static bool gIsHit = false;
 static Timer_t gFireTimer = { BURST_TIME, 0 };
 static uint8_t gAddress;
-static char gLastRx;
+
+static struct {
+	uint8_t bfr[3];
+	bool isHit;
+} gRx = {0};
 
 /*
  * PUBLIC FUNCTIONS
@@ -45,7 +49,6 @@ void IR_Init(uint8_t address)
 {
 	UART_Init(IR_UART, IR_BAUD);
 	gAddress = address;
-	gLastRx = 0;
 }
 
 void IR_Deinit(uint8_t address)
@@ -65,11 +68,18 @@ void IR_Update(void)
 	uint8_t rx;
 	while (UART_Rx(IR_UART, &rx, 1))
 	{
-		if (gLastRx == BURST_START && rx != gAddress)
-		{
-			gIsHit = true;
-		}
-		gLastRx = rx;
+		gRx.bfr[0] = gRx.bfr[1];
+		gRx.bfr[1] = gRx.bfr[2];
+		gRx.bfr[2] = rx;
+
+		uint8_t address = gRx.bfr[1];
+		if (  gRx.bfr[0] == BURST_START
+		   && address != 0
+		   && address != gAddress
+		   && gRx.bfr[2] == IR_Checksum(address))
+	   {
+			gRx.isHit = true;
+	   }
 	}
 }
 
@@ -84,7 +94,8 @@ void IR_Fire(void)
 
 		uint8_t burst[] = {
 				BURST_START,
-				gAddress
+				gAddress,
+				IR_Checksum(gAddress)
 		};
 		UART_Tx(IR_UART, burst, sizeof(burst));
 	}
@@ -97,8 +108,8 @@ bool IR_IsBusy(void)
 
 bool IR_IsHit(void)
 {
-	bool hit = gIsHit;
-	gIsHit = false;
+	bool hit = gRx.isHit;
+	gRx.isHit = false;
 	return hit;
 }
 
@@ -120,6 +131,11 @@ static void IR_StopStrobe(void)
 	TIM_SetPulse(IR_STROBE_TIM, IR_STROBE_TIM_CH, 0);
 	TIM_Stop(IR_STROBE_TIM);
 	TIM_Deinit(IR_STROBE_TIM);
+}
+
+static inline uint8_t IR_Checksum(uint8_t addr)
+{
+	return ~addr;
 }
 
 /*
