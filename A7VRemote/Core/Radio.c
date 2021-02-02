@@ -13,6 +13,7 @@
  * PRIVATE DEFINITIONS
  */
 
+#define BASE_FREQ 			915000000
 #define DEFAULT_POWER		10
 
 #define TX_PERIOD			100
@@ -46,6 +47,7 @@ void Radio_Init(uint8_t address)
 			.address = gAddress,
 			.channel = gAddress,
 			.power = DEFAULT_POWER,
+			.baseFreq = BASE_FREQ,
 	};
 	CC1101_Init(&cc1101_config);
 }

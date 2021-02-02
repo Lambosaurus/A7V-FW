@@ -19,6 +19,7 @@ typedef struct {
 	uint8_t channel;
 	uint8_t address;
 	int8_t power;
+	uint32_t baseFreq;
 } CC1101Config_t;
 
 bool CC1101_Init(CC1101Config_t * config);

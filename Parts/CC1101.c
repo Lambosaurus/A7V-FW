@@ -9,7 +9,8 @@
  * PRIVATE DEFINITIONS
  */
 
-#define SPI_BITRATE	6000000 // 6MHz
+#define SPI_BITRATE	6000000  // 6MHz
+#define XTAL_FREQ	26000000 // 26MHz
 
 #define ADDR_BURST	0x40
 #define ADDR_READ	0x80
@@ -170,9 +171,9 @@ static const uint8_t cc1100_GFSK_38_4_kb[] = {
 	0x00,  // CHANNR       D Channel Number
 	0x06,  // FSCTRL1      A Frequency Synthesizer Control
 	0x00,  // FSCTRL0      A Frequency Synthesizer Control
-	0x21,  // FREQ2        D Frequency Control Word, High Byte
-	0x65,  // FREQ1        D Frequency Control Word, Middle Byte
-	0x6A,  // FREQ0        D Frequency Control Word, Low Byte
+	0x00,  // FREQ2        D Frequency Control Word, High Byte
+	0x00,  // FREQ1        D Frequency Control Word, Middle Byte
+	0x00,  // FREQ0        D Frequency Control Word, Low Byte
 	0xCA,  // MDMCFG4      A Modem Configuration
 	0x83,  // MDMCFG3      A Modem Configuration
 	0x13,  // MDMCFG2      A Modem Configuration
@@ -206,12 +207,6 @@ static const uint8_t cc1100_GFSK_38_4_kb[] = {
 	0x0B   // TEST0        A Various Test Settings
 };
 
-static const uint8_t cc1100_915[] = {
-	0x23,
-	0x31,
-	0x3B
-};
-
 static const uint8_t cc1100_pa_table[] = {
 	0x0B,
 	0x1B,
@@ -238,7 +233,6 @@ bool CC1101_Init(CC1101Config_t * config)
 	if (success)
 	{
 		CC1101_WriteRegs(REG_IOCFG2, cc1100_GFSK_38_4_kb, sizeof(cc1100_GFSK_38_4_kb));
-		CC1101_WriteRegs(REG_FREQ2, cc1100_915, sizeof(cc1100_915));
 		CC1101_WriteRegs(REG_PATABLE, cc1100_pa_table, sizeof(cc1100_pa_table));
 		CC1101_WriteConfig(config);
 		CC1101_EnterRx();
@@ -340,6 +334,14 @@ int16_t CC1101_GetRSSI(void)
 
 static void CC1101_WriteConfig(CC1101Config_t * config)
 {
+	uint32_t freq_ctl = (((uint64_t)config->baseFreq << 16) / XTAL_FREQ);
+	uint8_t freq[3] = {
+		freq_ctl >> 16,
+		freq_ctl >> 8,
+		freq_ctl,
+	};
+	CC1101_WriteRegs(REG_FREQ2, freq, sizeof(freq));
+
 	int8_t dBm = config->power;
     uint8_t pa;
     if      (dBm <= -30) { pa = 0x00; }
