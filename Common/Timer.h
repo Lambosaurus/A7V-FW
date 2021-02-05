@@ -16,23 +16,15 @@ typedef struct {
 	uint32_t last;
 } Timer_t;
 
-extern uint32_t __timer_now;
-
-void Timer_Tick(uint32_t t);
-
-static inline bool Timer_IsElapsed(Timer_t * t)
-{
-	return (__timer_now - t->last) > t->period;
-}
-
-static inline void Timer_Reload(Timer_t * t)
-{
-	t->last = __timer_now;
-}
-
 /*
  * PUBLIC FUNCTIONS
  */
 
+void Timer_Tick(uint32_t t);
+static inline bool Timer_IsElapsed(Timer_t * t);
+static inline void Timer_Reload(Timer_t * t);
+static inline bool Timer_Exceeds(Timer_t * t, uint32_t ticks);
+
+#include "Timer.inl"
 
 #endif //TIMER_H
