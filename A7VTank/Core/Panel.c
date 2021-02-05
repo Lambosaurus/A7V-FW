@@ -21,7 +21,7 @@
 #define BATTERY_PERIOD		2000
 #define LINK_TIMEOUT		500
 #define RELOAD_PERIOD		1500
-#define HIT_DURATION		3000
+#define DISABLE_DURATION		3000
 
 #define CELL_LOW_MV			1100
 #define CELL_COUNT			4
@@ -29,6 +29,7 @@
 
 #define NOTE_COUNT(notes)	(sizeof(notes) / sizeof(Note_t))
 
+#define BASE_HEALTH			3
 
 /*
  * PRIVATE TYPES
@@ -62,14 +63,14 @@ static Timer_t gActivityTimer = { ACTIVITY_TIMEOUT, 0 };
 static Timer_t gBatteryTimer = { BATTERY_PERIOD, 0 };
 static Timer_t gLinkTimer = { LINK_TIMEOUT, 0 };
 static Timer_t gReloadTimer = { RELOAD_PERIOD, 0 };
-static Timer_t gHitTimer = { HIT_DURATION, 0 };
+static Timer_t gDisableTimer = { DISABLE_DURATION, 0 };
 
 static struct {
 	bool lowBatt;
 	uint8_t health;
 	bool ready;
 	bool linked;
-	bool hit;
+	bool disabled;
 } gState = { 0 };
 
 /*
@@ -84,6 +85,8 @@ void Panel_Init(void)
 
 	GPIO_EnableOutput(LED_RED_GPIO, LED_RED_PIN, GPIO_PIN_RESET);
 	GPIO_EnableOutput(LED_GRN_GPIO, LED_GRN_PIN, GPIO_PIN_RESET);
+
+	gState.health = BASE_HEALTH;
 }
 
 void Panel_Recieve(MSG_Remote_t * msg)
@@ -94,7 +97,7 @@ void Panel_Recieve(MSG_Remote_t * msg)
 	{
 		MSG_Tank_t tx = {
 			.health = gState.health,
-			.ready = gState.ready,
+			.ready = gState.ready && !gState.disabled,
 			.lowBatt = gState.lowBatt,
 		};
 		Radio_Reply(&tx);
@@ -108,8 +111,11 @@ void Panel_Recieve(MSG_Remote_t * msg)
 		}
 	}
 
-	Turret_SetRate(msg->right.x);
-	Panel_SetThrottle(msg->left.x, msg->left.y);
+	if (!gState.disabled)
+	{
+		Turret_SetRate(msg->right.x);
+		Panel_SetThrottle(msg->left.x, msg->left.y);
+	}
 
 	Timer_Reload(&gLinkTimer);
 	gState.linked = true;
@@ -142,9 +148,9 @@ void Panel_Update(void)
 		Sound_Queue(Sound_Reload);
 	}
 
-	if (gState.hit && Timer_IsElapsed(&gHitTimer))
+	if (gState.disabled && gState.health && Timer_IsElapsed(&gDisableTimer))
 	{
-		gState.hit = false;
+		gState.disabled = false;
 	}
 
 	Panel_SetLEDs( Panel_SelectLeds() );
@@ -177,11 +183,14 @@ void Panel_Powerdown(void)
 
 void Panel_Hit(void)
 {
-	if (!gState.hit)
+	if (!gState.disabled)
 	{
 		Sound_Queue(Sound_Hit);
-		Timer_Reload(&gHitTimer);
-		gState.hit = true;
+		Timer_Reload(&gDisableTimer);
+		gState.disabled = true;
+
+		Motor_Stop();
+		Turret_Stop();
 
 		if (gState.health)
 		{
@@ -196,7 +205,7 @@ void Panel_Hit(void)
 
 static LEDColor_t Panel_SelectLeds(void)
 {
-	if (gState.hit)
+	if (gState.disabled)
 	{
 		return LED_RED;
 	}
@@ -209,11 +218,14 @@ static LEDColor_t Panel_SelectLeds(void)
 
 static void Panel_Fire(void)
 {
-	gState.ready = false;
-	Timer_Reload(&gReloadTimer);
-	Sound_Halt();
-	IR_Fire();
-	Sound_Queue(Sound_Fire);
+	if (!gState.disabled)
+	{
+		gState.ready = false;
+		Timer_Reload(&gReloadTimer);
+		Sound_Halt();
+		IR_Fire();
+		Sound_Queue(Sound_Fire);
+	}
 }
 
 static void Panel_SetThrottle(int8_t x, int8_t y)
