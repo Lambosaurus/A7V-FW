@@ -21,7 +21,10 @@
 #define BATTERY_PERIOD		2000
 #define LINK_TIMEOUT		500
 #define RELOAD_PERIOD		1500
-#define DISABLE_DURATION		3000
+#define DISABLE_DURATION	2000
+
+#define FIRE_FLASH_DURATION		100
+
 
 #define CELL_LOW_MV			1100
 #define CELL_COUNT			4
@@ -87,6 +90,7 @@ void Panel_Init(void)
 	GPIO_EnableOutput(LED_GRN_GPIO, LED_GRN_PIN, GPIO_PIN_RESET);
 
 	gState.health = BASE_HEALTH;
+	gState.ready = true;
 }
 
 void Panel_Recieve(MSG_Remote_t * msg)
@@ -208,6 +212,10 @@ static LEDColor_t Panel_SelectLeds(void)
 	if (gState.disabled)
 	{
 		return LED_RED;
+	}
+	else if (!gState.ready && Timer_Under(&gReloadTimer, FIRE_FLASH_DURATION))
+	{
+		return LED_YEL;
 	}
 	else if (gState.linked)
 	{

@@ -19,7 +19,12 @@ static inline void Timer_Reload(Timer_t * t)
 	t->last = __timer_now;
 }
 
-static inline bool Timer_Exceeds(Timer_t * t, uint32_t ticks)
+static inline bool Timer_Over(Timer_t * t, uint32_t ticks)
 {
 	return (__timer_now - t->last) > ticks;
+}
+
+static inline bool Timer_Under(Timer_t * t, uint32_t ticks)
+{
+	return (__timer_now - t->last) < ticks;
 }
