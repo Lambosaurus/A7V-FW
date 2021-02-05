@@ -11,18 +11,23 @@
  * PUBLIC TYPES
  */
 
-/*
- * PUBLIC FUNCTIONS
- */
-
 typedef struct {
 	uint8_t channel;
 	uint8_t address;
 	int8_t power;
-	uint32_t baseFreq;
 } CC1101Config_t;
 
-bool CC1101_Init(CC1101Config_t * config);
+typedef struct {
+	uint32_t baseFreqKhz;
+	uint16_t chanSpacingKhz;
+	uint32_t baud;
+} CC1101Modem_t;
+
+/*
+ * PUBLIC FUNCTIONS
+ */
+
+bool CC1101_Init(CC1101Modem_t * modem, CC1101Config_t * config);
 void CC1101_Deinit(void);
 
 // These can be updated on the fly

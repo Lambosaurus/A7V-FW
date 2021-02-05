@@ -9,8 +9,9 @@
  * PRIVATE DEFINITIONS
  */
 
-#define SPI_BITRATE	6000000  // 6MHz
-#define XTAL_FREQ	26000000 // 26MHz
+#define SPI_BITRATE			6000000  // 6MHz
+#define XTAL_FREQ			26000000 // 26MHz
+#define XTAL_FREQ_KHZ		(XTAL_FREQ/1000)
 
 #define ADDR_BURST	0x40
 #define ADDR_READ	0x80
@@ -113,6 +114,9 @@
 #define REG_PATABLE      0x3E
 #define REG_FIFO       	 0x3F
 
+// MDMCFG BITS
+#define MDMCFG1_FEC_EN		0x80
+
 
 /*
  * PRIVATE TYPES
@@ -129,11 +133,17 @@ typedef enum {
 	State_TxUnderflow   = 0x7
 } CC1101State_t;
 
+typedef struct {
+	uint16_t e;
+	uint16_t m;
+} Exponent_t;
+
 /*
  * PRIVATE PROTOTYPES
  */
 
 static void CC1101_WriteConfig(CC1101Config_t * config);
+static void CC1101_WriteModem(CC1101Modem_t * modem);
 
 static uint8_t CC1101_ReadStatus(uint8_t stat);
 static void CC1101_Command(uint8_t cmd);
@@ -222,7 +232,7 @@ static const uint8_t cc1100_pa_table[] = {
  * PUBLIC FUNCTIONS
  */
 
-bool CC1101_Init(CC1101Config_t * config)
+bool CC1101_Init(CC1101Modem_t * modem, CC1101Config_t * config)
 {
 	GPIO_EnableOutput(CC1101_CS_GPIO, CC1101_CS_PIN, GPIO_PIN_SET);
 	CC1101_SPIStart();
@@ -234,6 +244,7 @@ bool CC1101_Init(CC1101Config_t * config)
 	{
 		CC1101_WriteRegs(REG_IOCFG2, cc1100_GFSK_38_4_kb, sizeof(cc1100_GFSK_38_4_kb));
 		CC1101_WriteRegs(REG_PATABLE, cc1100_pa_table, sizeof(cc1100_pa_table));
+		CC1101_WriteModem(modem);
 		CC1101_WriteConfig(config);
 		CC1101_EnterRx();
 
@@ -332,16 +343,68 @@ int16_t CC1101_GetRSSI(void)
  * PRIVATE FUNCTIONS
  */
 
-static void CC1101_WriteConfig(CC1101Config_t * config)
+static void Exponent_Encode(Exponent_t * exp, uint32_t v, uint32_t mbits, uint32_t ebits)
 {
-	uint32_t freq_ctl = (((uint64_t)config->baseFreq << 16) / XTAL_FREQ);
+	uint32_t one = (1 << mbits);
+	uint32_t e = 0;
+
+	if (v < one)
+	{
+		// Value is too small to be expressed.
+		e = 0;
+		v = 0;
+	}
+	else
+	{
+		uint32_t vmax = (one << 1) - 1;
+		while (v > vmax)
+		{
+			v >>= 1;
+			e += 1;
+		}
+		uint32_t emax = (1 << ebits) - 1;
+		if (e > emax)
+		{
+			// Value is too large to be expressed.
+			e = emax;
+			v = one - 1;
+		}
+		// The top bit is implied.
+		v &= ~one;
+	}
+
+	exp->e = e;
+	exp->m = v;
+}
+
+static uint32_t Exponent_Decode(Exponent_t * exp, uint32_t mbits)
+{
+	return ((1 << mbits) | exp->m) << exp->e;
+}
+
+static void CC1101_WriteModem(CC1101Modem_t * modem)
+{
+	uint32_t freq_k = (((uint64_t)modem->baseFreqKhz << 16) / XTAL_FREQ_KHZ);
 	uint8_t freq[3] = {
-		freq_ctl >> 16,
-		freq_ctl >> 8,
-		freq_ctl,
+		freq_k >> 16,
+		freq_k >> 8,
+		freq_k,
 	};
 	CC1101_WriteRegs(REG_FREQ2, freq, sizeof(freq));
 
+	uint32_t spacing_k = (modem->chanSpacingKhz << 18) / XTAL_FREQ_KHZ;
+	Exponent_t spacing;
+	Exponent_Encode(&spacing, spacing_k, 8, 2);
+
+	uint8_t preamble = 2; // This is actually a 3 bit exponential (2 bit e, 1 bit m)
+	uint8_t mdmcfg[5];
+	mdmcfg[0] = spacing.m;
+	mdmcfg[1] = spacing.e | MDMCFG1_FEC_EN | (preamble << 4);
+}
+
+
+static void CC1101_WriteConfig(CC1101Config_t * config)
+{
 	int8_t dBm = config->power;
     uint8_t pa;
     if      (dBm <= -30) { pa = 0x00; }
@@ -489,7 +552,6 @@ static inline void CC1101_Deselect(void)
 {
 	GPIO_Set(CC1101_CS_GPIO, CC1101_CS_PIN);
 }
-
 /*
  * INTERRUPT ROUTINES
  */
