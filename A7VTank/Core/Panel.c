@@ -20,8 +20,8 @@
 #define ACTIVITY_TIMEOUT	30000
 #define BATTERY_PERIOD		2000
 #define LINK_TIMEOUT		500
-#define READY_TIMEOUT		1500
-#define HIT_TIMEOUT			3000
+#define RELOAD_PERIOD		1500
+#define HIT_DURATION		3000
 
 #define CELL_LOW_MV			1100
 #define CELL_COUNT			4
@@ -50,6 +50,7 @@ static bool Panel_CheckBattery(void);
 static void Panel_SetLEDs(LEDColor_t color);
 static void Panel_SetThrottle(int8_t x, int8_t y);
 static void Panel_Fire(void);
+static LEDColor_t Panel_SelectLeds(void);
 
 /*
  * PRIVATE VARIABLES
@@ -60,13 +61,15 @@ static Button_t gPwrButton;
 static Timer_t gActivityTimer = { ACTIVITY_TIMEOUT, 0 };
 static Timer_t gBatteryTimer = { BATTERY_PERIOD, 0 };
 static Timer_t gLinkTimer = { LINK_TIMEOUT, 0 };
-static Timer_t gReadyTimer = { READY_TIMEOUT, 0 };
+static Timer_t gReloadTimer = { RELOAD_PERIOD, 0 };
+static Timer_t gHitTimer = { HIT_DURATION, 0 };
 
 static struct {
 	bool lowBatt;
 	uint8_t health;
 	bool ready;
 	bool linked;
+	bool hit;
 } gState = { 0 };
 
 /*
@@ -133,13 +136,18 @@ void Panel_Update(void)
 		Turret_Stop();
 	}
 
-	if (!gState.ready && Timer_IsElapsed(&gReadyTimer))
+	if (!gState.ready && Timer_IsElapsed(&gReloadTimer))
 	{
 		gState.ready = true;
 		Sound_Queue(Sound_Reload);
 	}
 
-	Panel_SetLEDs( gState.linked ? LED_GRN : LED_BLK );
+	if (gState.hit && Timer_IsElapsed(&gHitTimer))
+	{
+		gState.hit = false;
+	}
+
+	Panel_SetLEDs( Panel_SelectLeds() );
 }
 
 void Panel_Powerup(void)
@@ -169,17 +177,40 @@ void Panel_Powerdown(void)
 
 void Panel_Hit(void)
 {
-	Sound_Queue(Sound_Hit);
+	if (!gState.hit)
+	{
+		Sound_Queue(Sound_Hit);
+		Timer_Reload(&gHitTimer);
+		gState.hit = true;
+
+		if (gState.health)
+		{
+			gState.health -= 1;
+		}
+	}
 }
 
 /*
  * PRIVATE FUNCTIONS
  */
 
+static LEDColor_t Panel_SelectLeds(void)
+{
+	if (gState.hit)
+	{
+		return LED_RED;
+	}
+	else if (gState.linked)
+	{
+		return LED_GRN;
+	}
+	return LED_BLK;
+}
+
 static void Panel_Fire(void)
 {
 	gState.ready = false;
-	Timer_Reload(&gReadyTimer);
+	Timer_Reload(&gReloadTimer);
 	Sound_Halt();
 	IR_Fire();
 	Sound_Queue(Sound_Fire);
