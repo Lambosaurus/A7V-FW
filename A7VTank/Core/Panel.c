@@ -74,6 +74,7 @@ static struct {
 	bool ready;
 	bool linked;
 	bool disabled;
+	bool booted;
 } gState = { 0 };
 
 /*
@@ -123,6 +124,12 @@ void Panel_Recieve(MSG_Remote_t * msg)
 
 	Timer_Reload(&gLinkTimer);
 	gState.linked = true;
+
+	if (!gState.booted)
+	{
+		gState.booted = true;
+		Sound_Queue(Sound_Boot);
+	}
 }
 
 

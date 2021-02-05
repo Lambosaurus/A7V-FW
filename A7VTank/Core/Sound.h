@@ -15,6 +15,7 @@ typedef enum {
 	Sound_Fire,
 	Sound_Hit,
 	Sound_Reload,
+	Sound_Boot,
 }Sound_t;
 
 /*

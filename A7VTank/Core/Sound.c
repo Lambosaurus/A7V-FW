@@ -24,13 +24,14 @@ void Sound_QueueNotes(const Note_t * notes, uint16_t count);
 
 
 const static Note_t gFireSound[] = {
-		{ 8000, 25 },
-		{ 7000, 30 },
-		{ 6000, 40 },
-		{ 5000, 50 },
-		{ 5500, 75 },
-		{ 4250, 100 },
-		{ 4000, 100 }
+		{ 8000, 10 },
+		{ 7000, 15 },
+		{ 6000, 20 },
+		{ 5000, 25 },
+		{ 5500, 35 },
+		{ 4250, 45 },
+		{ 4000, 55 },
+		{ 3750, 65 },
 };
 
 const static Note_t gHitSound[] = {
@@ -43,6 +44,22 @@ const static Note_t gReloadSound[] = {
 		{ 4000, 100 },
 };
 
+const static Note_t gBootSound[] = {
+		{ 2300, 20 },
+		{ 1700, 20 },
+		{ 2300, 20 },
+		{ 1700, 20 },
+		{ 2300, 20 },
+		{ 1700, 20 },
+		{ 2300, 20 },
+		{ 1700, 20 },
+		{ 2300, 20 },
+		{ 1700, 20 },
+		{ 2300, 20 },
+		{ 1700, 20 },
+		{ 0, 50 },
+		{ 4100, 150 },
+};
 
 static struct {
 	const Note_t * notes;
@@ -107,6 +124,8 @@ void Sound_Queue(Sound_t sound)
 	case Sound_Reload:
 		QUEUE_SOUND(gReloadSound);
 		break;
+	case Sound_Boot:
+		QUEUE_SOUND(gBootSound);
 	}
 }
 
