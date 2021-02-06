@@ -53,14 +53,15 @@ int main(void)
 
 		if (IR_IsHit())
 		{
-			Panel_Hit();
+			Panel_Hit(false);
 		}
 
 		if (LIS2_IsIntSet())
 		{
 			LIS2_Accel_t acc;
 			LIS2_Read(&acc);
-			Panel_Hit();
+			// Bump hits bypass the shield time
+			Panel_Hit(true);
 		}
 
 		CORE_Idle();

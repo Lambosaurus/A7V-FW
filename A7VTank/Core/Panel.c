@@ -22,6 +22,7 @@
 #define LINK_TIMEOUT		500
 #define RELOAD_PERIOD		1500
 #define DISABLE_DURATION	2000
+#define SHIELD_DURATION		4000
 
 #define FIRE_FLASH_DURATION		100
 
@@ -67,6 +68,7 @@ static Timer_t gBatteryTimer = { BATTERY_PERIOD, 0 };
 static Timer_t gLinkTimer = { LINK_TIMEOUT, 0 };
 static Timer_t gReloadTimer = { RELOAD_PERIOD, 0 };
 static Timer_t gDisableTimer = { DISABLE_DURATION, 0 };
+static Timer_t gShieldTimer = { SHIELD_DURATION, 0 };
 
 static struct {
 	bool lowBatt;
@@ -75,6 +77,7 @@ static struct {
 	bool linked;
 	bool disabled;
 	bool booted;
+	bool shielded;
 } gState = { 0 };
 
 /*
@@ -164,6 +167,11 @@ void Panel_Update(void)
 		gState.disabled = false;
 	}
 
+	if (gState.shielded && Timer_IsElapsed(&gShieldTimer))
+	{
+		gState.shielded = false;
+	}
+
 	Panel_SetLEDs( Panel_SelectLeds() );
 }
 
@@ -192,9 +200,11 @@ void Panel_Powerdown(void)
 	while(1);
 }
 
-void Panel_Hit(void)
+void Panel_Hit(bool bypass)
 {
-	if (!gState.disabled)
+	// Hits cannot land if already disabled.
+	// The hits also cannot land if we are shielded, unless they bypass
+	if (!gState.disabled && (bypass || !gState.shielded))
 	{
 		if (gState.health)
 		{
@@ -212,6 +222,8 @@ void Panel_Hit(void)
 
 		Timer_Reload(&gDisableTimer);
 		gState.disabled = true;
+		Timer_Reload(&gShieldTimer);
+		gState.shielded = true;
 
 		Motor_Stop();
 		Turret_Stop();
