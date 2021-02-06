@@ -17,6 +17,7 @@ void Motor_Init(void);
 void Motor_Deinit(void);
 void Motor_Stop(void);
 void Motor_Throttle(int16_t m1, int16_t m2);
+void Motor_Update(void);
 
 /*
  * PUBLIC FUNCTIONS
