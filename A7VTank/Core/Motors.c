@@ -15,20 +15,37 @@
 
 #define MOTOR_PINS_ALL (MOTOR1_I1_PIN | MOTOR1_I2_PIN | MOTOR2_I1_PIN | MOTOR2_I2_PIN)
 
+#define MIN(a, b) (b > a ? a : b)
+#define MAX(a, b) (b < a ? a : b)
+
+// This is the minimum PWM to apply to the motors.
+#define MOTOR_STALL			96
+#define MOTOR_RAMP_RATE		2
 
 /*
  * PRIVATE TYPES
  */
 
+typedef struct {
+	int16_t current;
+	int16_t target;
+} Motor_t;
+
 /*
  * PRIVATE PROTOTYPES
  */
 
-void Motor_UpdateThrottle(int16_t throttle, uint8_t i1, uint8_t i2);
+void Motor_SetPWM(int16_t throttle, uint8_t i1, uint8_t i2);
+
+int16_t Mx_Update(Motor_t * m);
+void Mx_SetTarget(Motor_t * m, int16_t target);
 
 /*
  * PRIVATE VARIABLES
  */
+
+Motor_t gM1;
+Motor_t gM2;
 
 /*
  * PUBLIC FUNCTIONS
@@ -61,15 +78,76 @@ void Motor_Stop(void)
 
 void Motor_Throttle(int16_t m1, int16_t m2)
 {
-	Motor_UpdateThrottle(m1, MOTOR1_I1_CH, MOTOR1_I2_CH);
-	Motor_UpdateThrottle(m2, MOTOR2_I1_CH, MOTOR2_I2_CH);
+	Mx_SetTarget(&gM1, m1);
+	Mx_SetTarget(&gM2, m2);
+}
+
+void Motor_Update(void)
+{
+	static uint32_t sLastTick = 0;
+	uint32_t tick = CORE_GetTick();
+	if (tick != sLastTick)
+	{
+		sLastTick = tick;
+
+		Motor_SetPWM(Mx_Update(&gM1), MOTOR1_I1_CH, MOTOR1_I2_CH);
+		Motor_SetPWM(Mx_Update(&gM2), MOTOR2_I1_CH, MOTOR2_I2_CH);
+	}
 }
 
 /*
  * PRIVATE FUNCTIONS
  */
 
-void Motor_UpdateThrottle(int16_t throttle, uint8_t i1, uint8_t i2)
+
+int16_t Motor_ActivationCurve(int32_t throttle)
+{
+	if (throttle > 0)
+	{
+		return (throttle * (MOTOR_MAX - MOTOR_STALL) / MOTOR_MAX) + MOTOR_STALL;
+	}
+	else if (throttle < 0)
+	{
+		return (throttle * (MOTOR_MAX - MOTOR_STALL) / MOTOR_MAX) - MOTOR_STALL;
+	}
+	return 0;
+}
+
+int16_t Mx_Update(Motor_t * m)
+{
+	if (m->target > m->current)
+	{
+		m->current += MOTOR_RAMP_RATE;
+		if (m->current > m->target)
+		{
+			m->current = m->target;
+		}
+	}
+	else if (m->target < m->current)
+	{
+		m->current -= MOTOR_RAMP_RATE;
+		if (m->current < m->target)
+		{
+			m->current = m->target;
+		}
+	}
+	return Motor_ActivationCurve(m->current);
+}
+
+void Mx_SetTarget(Motor_t * m, int16_t target)
+{
+	m->target = target;
+	if (m->current > 0 && m->target < m->current)
+	{
+		m->current = MAX(m->target, 0);
+	}
+	else if (m->current < 0 && m->target > m->current)
+	{
+		m->current = MIN(m->target, 0);
+	}
+}
+
+void Motor_SetPWM(int16_t throttle, uint8_t i1, uint8_t i2)
 {
 	uint16_t d1;
 	uint16_t d2;

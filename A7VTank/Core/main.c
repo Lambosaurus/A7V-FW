@@ -42,13 +42,14 @@ int main(void)
 
 	while (1)
 	{
-		Timer_Tick(HAL_GetTick());
+		Timer_Tick(CORE_GetTick());
 
 		Radio_Update();
 		Panel_Update();
 		Sound_Update();
 		IR_Update();
 		Turret_Update();
+		Motor_Update();
 
 		if (IR_IsHit())
 		{
