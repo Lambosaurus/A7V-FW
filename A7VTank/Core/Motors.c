@@ -18,6 +18,8 @@
 #define MIN(a, b) (b > a ? a : b)
 #define MAX(a, b) (b < a ? a : b)
 
+// This is the minimum PWM to apply to the motors.
+#define MOTOR_STALL			96
 #define MOTOR_RAMP_RATE		2
 
 /*
@@ -97,6 +99,20 @@ void Motor_Update(void)
  * PRIVATE FUNCTIONS
  */
 
+
+int16_t Motor_ActivationCurve(int32_t throttle)
+{
+	if (throttle > 0)
+	{
+		return (throttle * (MOTOR_MAX - MOTOR_STALL) / MOTOR_MAX) + MOTOR_STALL;
+	}
+	else if (throttle < 0)
+	{
+		return (throttle * (MOTOR_MAX - MOTOR_STALL) / MOTOR_MAX) - MOTOR_STALL;
+	}
+	return 0;
+}
+
 int16_t Mx_Update(Motor_t * m)
 {
 	if (m->target > m->current)
@@ -115,7 +131,7 @@ int16_t Mx_Update(Motor_t * m)
 			m->current = m->target;
 		}
 	}
-	return m->current;
+	return Motor_ActivationCurve(m->current);
 }
 
 void Mx_SetTarget(Motor_t * m, int16_t target)
