@@ -7,16 +7,23 @@
  * PUBLIC DEFINITIONS
  */
 
+#define SOUND_MAX_BEEPS 	4
+
 /*
  * PUBLIC TYPES
  */
 
 typedef enum {
 	Sound_Fire,
-	Sound_Hit,
+	Sound_Destroyed,
+	Sound_Hit_1Beep,
+	Sound_Hit_2Beep,
+	Sound_Hit_3Beep,
+	Sound_Hit_4Beep,
 	Sound_Reload,
 	Sound_Boot,
 }Sound_t;
+
 
 /*
  * PUBLIC FUNCTIONS

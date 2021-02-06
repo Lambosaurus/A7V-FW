@@ -6,7 +6,47 @@
  * PRIVATE DEFINITIONS
  */
 
-#define QUEUE_SOUND(notes) Sound_QueueNotes(notes, sizeof(notes) / sizeof(Note_t))
+#define SOUND_SIZE(notes)	(sizeof(notes) / sizeof(Note_t))
+
+#define A5		880
+#define As5 	932
+#define B5		987
+#define C6  	1046
+#define Cs6 	1108
+#define D6  	1174
+#define Ds6 	1244
+#define E6  	1318
+#define F6  	1396
+#define Fs6 	1479
+#define G6  	1567
+#define Gs6 	1661
+#define A6		1760
+#define As6		1864
+#define B6		1975
+#define C7		2093
+#define Cs7 	2217
+#define D7		2349
+#define Ds7 	2489
+#define E7		2637
+#define F7		2793
+#define Fs7 	2959
+#define G7		3135
+#define Gs7 	3322
+#define A7		3520
+#define As7 	3729
+#define B7		3951
+#define C8		4186
+#define Cs8 	4434
+#define D8		4698
+#define Ds8 	4978
+#define E8		5274
+#define F8		5587
+#define Fs8 	5919
+#define G8		6271
+#define Gs8 	6644
+#define A8		7040
+#define As8 	7458
+#define B8		7902
 
 /*
  * PRIVATE TYPES
@@ -34,37 +74,53 @@ const static Note_t gFireSound[] = {
 		{ 3750, 65 },
 };
 
+
+#define HIT_SOUND_SIZE(beeps) ((beeps) * 2 )
 const static Note_t gHitSound[] = {
-		{ 3000, 250 },
-		{ 1500, 250 },
+		{ B7, 250 },
+		{ Ds7, 200 },
+		{ 0, 100 },
+		{ Ds7, 200 },
+		{ 0, 200 },
+		{ Ds7, 200 },
+		{ 0, 200 },
+		{ Ds7, 200 }
+};
+
+const static Note_t gDestroyedSound[] = {
+		{ B7, 250 },
+		{ Ds7, 200 },
+		{ 0, 100 },
+		{ Ds7, 1000 },
 };
 
 const static Note_t gReloadSound[] = {
-		{ 2500, 100 },
-		{ 4000, 100 },
+		{ Ds7, 100 },
+		{ B7, 100 },
 };
 
 const static Note_t gBootSound[] = {
-		{ 2300, 20 },
-		{ 1700, 20 },
-		{ 2300, 20 },
-		{ 1700, 20 },
-		{ 2300, 20 },
-		{ 1700, 20 },
-		{ 2300, 20 },
-		{ 1700, 20 },
-		{ 2300, 20 },
-		{ 1700, 20 },
-		{ 2300, 20 },
-		{ 1700, 20 },
+		{ Ds7, 20 },
+		{ A6, 20 },
+		{ Ds7, 20 },
+		{ A6, 20 },
+		{ Ds7, 20 },
+		{ A6, 20 },
+		{ Ds7, 20 },
+		{ A6, 20 },
+		{ Ds7, 20 },
+		{ A6, 20 },
+		{ Ds7, 20 },
+		{ A6, 20 },
 		{ 0, 50 },
-		{ 4100, 150 },
+		{ C8, 150 },
 };
 
 static struct {
 	const Note_t * notes;
 	uint16_t count;
 	bool busy;
+	Sound_t priority;
 } gQueue = {0};
 
 /*
@@ -113,19 +169,31 @@ void Sound_Halt(void)
 
 void Sound_Queue(Sound_t sound)
 {
-	switch (sound)
+	if (!gQueue.busy || sound < gQueue.priority)
 	{
-	case Sound_Fire:
-		QUEUE_SOUND(gFireSound);
-		break;
-	case Sound_Hit:
-		QUEUE_SOUND(gHitSound);
-		break;
-	case Sound_Reload:
-		QUEUE_SOUND(gReloadSound);
-		break;
-	case Sound_Boot:
-		QUEUE_SOUND(gBootSound);
+		gQueue.priority = sound;
+
+		switch (sound)
+		{
+		case Sound_Fire:
+			Sound_QueueNotes(gFireSound, SOUND_SIZE(gFireSound));
+			break;
+		case Sound_Reload:
+			Sound_QueueNotes(gReloadSound, SOUND_SIZE(gReloadSound));
+			break;
+		case Sound_Boot:
+			Sound_QueueNotes(gBootSound, SOUND_SIZE(gBootSound));
+			break;
+		case Sound_Hit_1Beep:
+		case Sound_Hit_2Beep:
+		case Sound_Hit_3Beep:
+		case Sound_Hit_4Beep:
+			Sound_QueueNotes(gHitSound, HIT_SOUND_SIZE(sound + 1 - Sound_Hit_1Beep));
+			break;
+		case Sound_Destroyed:
+			Sound_QueueNotes(gDestroyedSound, SOUND_SIZE(gDestroyedSound));
+			break;
+		}
 	}
 }
 

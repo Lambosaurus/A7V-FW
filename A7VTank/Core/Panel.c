@@ -196,17 +196,25 @@ void Panel_Hit(void)
 {
 	if (!gState.disabled)
 	{
-		Sound_Queue(Sound_Hit);
+		if (gState.health)
+		{
+			gState.health -= 1;
+		}
+
+		Sound_t sound = Sound_Destroyed;
+		if (gState.health > 0)
+		{
+			uint32_t beeps = BASE_HEALTH - gState.health;
+			if (beeps > SOUND_MAX_BEEPS) { beeps = SOUND_MAX_BEEPS; }
+			sound = Sound_Hit_1Beep + beeps - 1;
+		}
+		Sound_Queue(sound);
+
 		Timer_Reload(&gDisableTimer);
 		gState.disabled = true;
 
 		Motor_Stop();
 		Turret_Stop();
-
-		if (gState.health)
-		{
-			gState.health -= 1;
-		}
 	}
 }
 
