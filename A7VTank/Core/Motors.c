@@ -18,6 +18,8 @@
 #define MIN(a, b) (b > a ? a : b)
 #define MAX(a, b) (b < a ? a : b)
 
+#define MOTOR_RAMP_RATE		2
+
 /*
  * PRIVATE TYPES
  */
@@ -99,11 +101,19 @@ int16_t Mx_Update(Motor_t * m)
 {
 	if (m->target > m->current)
 	{
-		m->current++;
+		m->current += MOTOR_RAMP_RATE;
+		if (m->current > m->target)
+		{
+			m->current = m->target;
+		}
 	}
 	else if (m->target < m->current)
 	{
-		m->current--;
+		m->current -= MOTOR_RAMP_RATE;
+		if (m->current < m->target)
+		{
+			m->current = m->target;
+		}
 	}
 	return m->current;
 }
