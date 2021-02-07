@@ -116,6 +116,7 @@
 
 // MDMCFG BITS
 #define MDMCFG1_FEC_EN			0x80
+#define MDMCFG1_PREAMBLE_4B		0x20 // 1m2e exponential
 
 #define MDMCFG2_MANCHESTER_EN	0x08
 #define MCMCFG2_SYNC_1516		0x01
@@ -128,6 +129,8 @@
 #define MDMCFG2_MOD_4FSK		0x40
 #define MDMCFG2_MOD_MSK			0x70
 #define MDMCFG2_DCFILT_OFF		0x80
+
+#define MDMCFG4_BW_58K			0xF0 // 2m2e exponential
 
 /*
  * PRIVATE TYPES
@@ -195,11 +198,11 @@ static const uint8_t cc1100_GFSK_38_4_kb[] = {
 	0x00,  // FREQ2        D Frequency Control Word, High Byte
 	0x00,  // FREQ1        D Frequency Control Word, Middle Byte
 	0x00,  // FREQ0        D Frequency Control Word, Low Byte
-	0xCA,  // MDMCFG4      A Modem Configuration
-	0x83,  // MDMCFG3      A Modem Configuration
-	0x13,  // MDMCFG2      A Modem Configuration
-	0xA0,  // MDMCFG1      A Modem Configuration
-	0xF8,  // MDMCFG0      A Modem Configuration
+	0x00,  // MDMCFG4      D Modem Configuration
+	0x00,  // MDMCFG3      D Modem Configuration
+	0x00,  // MDMCFG2      D Modem Configuration
+	0x00,  // MDMCFG1      D Modem Configuration
+	0x00,  // MDMCFG0      D Modem Configuration
 	0x34,  // DEVIATN      A Modem Deviation Setting
 	0x07,  // MCSM2        A Main Radio Control State Machine Configuration
 	0x0C,  // MCSM1        A Main Radio Control State Machine Configuration
@@ -354,43 +357,34 @@ int16_t CC1101_GetRSSI(void)
  * PRIVATE FUNCTIONS
  */
 
-static void Exponent_Encode(Exponent_t * exp, uint32_t v, uint32_t mbits, uint32_t ebits)
+static Exponent_t Exponent_Encode(uint32_t v, uint32_t mbits, uint32_t ebits)
 {
 	uint32_t one = (1 << mbits);
-	uint32_t e = 0;
-
-	if (v < one)
-	{
-		// Value is too small to be expressed.
-		e = 0;
-		v = 0;
-	}
-	else
+	Exponent_t exp = {0};
+	if (v >= one) // Otherwise value is too small to be expressed. Leave as 0,0
 	{
 		uint32_t vmax = (one << 1) - 1;
 		while (v > vmax)
 		{
 			v >>= 1;
-			e += 1;
+			exp.e += 1;
 		}
 		uint32_t emax = (1 << ebits) - 1;
-		if (e > emax)
+		if (exp.e > emax)
 		{
-			// Value is too large to be expressed.
-			e = emax;
+			// Clamp to maximum value
+			exp.e = emax;
 			v = one - 1;
 		}
 		// The top bit is implied.
-		v &= ~one;
+		exp.m = v & ~one;
 	}
-
-	exp->e = e;
-	exp->m = v;
+	return exp;
 }
 
-static uint32_t Exponent_Decode(Exponent_t * exp, uint32_t mbits)
+static uint32_t Exponent_Decode(Exponent_t exp, uint32_t mbits)
 {
-	return ((1 << mbits) | exp->m) << exp->e;
+	return ((1 << mbits) | exp.m) << exp.e;
 }
 
 static void CC1101_WriteModem(CC1101Modem_t * modem)
@@ -404,25 +398,18 @@ static void CC1101_WriteModem(CC1101Modem_t * modem)
 	CC1101_WriteRegs(REG_FREQ2, freq, sizeof(freq));
 
 	uint32_t spacing_k = (modem->chanSpacingKhz << 18) / XTAL_FREQ_KHZ;
-	Exponent_t spacing;
-	Exponent_Encode(&spacing, spacing_k, 8, 2);
+	Exponent_t spacing = Exponent_Encode(spacing_k, 8, 2);
 
 	uint32_t baud_k = (((uint64_t)modem->baud << 28) / XTAL_FREQ);
-	Exponent_t baud;
-	Exponent_Encode(&baud, baud_k, 8, 4);
+	Exponent_t baud = Exponent_Encode(baud_k, 8, 4);
 
-	uint32_t bw = 60000;
-	uint32_t bandwidth_k = XTAL_FREQ / (8 * bw);
-	Exponent_t bandwidth;
-	Exponent_Encode(&bandwidth, bandwidth_k, 2, 2);
-
-	uint8_t preamble = 2; // This is actually a 3 bit exponential (2 bit e, 1 bit m)
 	uint8_t mdmcfg[5];
 	mdmcfg[0] = spacing.m;
-	mdmcfg[1] = spacing.e | MDMCFG1_FEC_EN | (preamble << 4);
-	mdmcfg[2] = MDMCFG2_SYNC_1616 | MDMCFG2_MOD_GFSK;
+	mdmcfg[1] = spacing.e | MDMCFG1_FEC_EN | MDMCFG1_PREAMBLE_4B;
+	mdmcfg[2] = MDMCFG2_SYNC_3032 | MDMCFG2_MOD_GFSK;
 	mdmcfg[3] = baud.m;
-	mdmcfg[4] = baud.e | (bandwidth.m << 4) | (bandwidth.e << 6);
+	mdmcfg[4] = baud.e | MDMCFG4_BW_58K;
+	CC1101_WriteRegs(REG_MDMCFG4, mdmcfg, sizeof(mdmcfg));
 }
 
 
