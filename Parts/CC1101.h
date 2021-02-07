@@ -18,16 +18,16 @@ typedef struct {
 } CC1101Config_t;
 
 typedef struct {
-	uint32_t baseFreqKhz;
-	uint16_t chanSpacingKhz;
+	uint32_t frequencyKhz;
+	uint16_t channelKhz;
 	uint32_t baud;
-} CC1101Modem_t;
+} CC1101ModemConfig_t;
 
 /*
  * PUBLIC FUNCTIONS
  */
 
-bool CC1101_Init(CC1101Modem_t * modem, CC1101Config_t * config);
+bool CC1101_Init(CC1101ModemConfig_t * modem, CC1101Config_t * config);
 void CC1101_Deinit(void);
 
 // These can be updated on the fly

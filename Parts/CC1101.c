@@ -157,7 +157,7 @@ typedef struct {
  */
 
 static void CC1101_WriteConfig(CC1101Config_t * config);
-static void CC1101_WriteModem(CC1101Modem_t * modem);
+static void CC1101_WriteModemConfig(CC1101ModemConfig_t * modem);
 
 static uint8_t CC1101_ReadStatus(uint8_t stat);
 static void CC1101_Command(uint8_t cmd);
@@ -246,7 +246,7 @@ static const uint8_t cc1100_pa_table[] = {
  * PUBLIC FUNCTIONS
  */
 
-bool CC1101_Init(CC1101Modem_t * modem, CC1101Config_t * config)
+bool CC1101_Init(CC1101ModemConfig_t * modem, CC1101Config_t * config)
 {
 	GPIO_EnableOutput(CC1101_CS_GPIO, CC1101_CS_PIN, GPIO_PIN_SET);
 	CC1101_SPIStart();
@@ -258,7 +258,7 @@ bool CC1101_Init(CC1101Modem_t * modem, CC1101Config_t * config)
 	{
 		CC1101_WriteRegs(REG_IOCFG2, cc1100_GFSK_38_4_kb, sizeof(cc1100_GFSK_38_4_kb));
 		CC1101_WriteRegs(REG_PATABLE, cc1100_pa_table, sizeof(cc1100_pa_table));
-		CC1101_WriteModem(modem);
+		CC1101_WriteModemConfig(modem);
 		CC1101_WriteConfig(config);
 		CC1101_EnterRx();
 
@@ -382,14 +382,14 @@ static Exponent_t Exponent_Encode(uint32_t v, uint32_t mbits, uint32_t ebits)
 	return exp;
 }
 
-static uint32_t Exponent_Decode(Exponent_t exp, uint32_t mbits)
-{
-	return ((1 << mbits) | exp.m) << exp.e;
-}
+//static uint32_t Exponent_Decode(Exponent_t exp, uint32_t mbits)
+//{
+//	return ((1 << mbits) | exp.m) << exp.e;
+//}
 
-static void CC1101_WriteModem(CC1101Modem_t * modem)
+static void CC1101_WriteModemConfig(CC1101ModemConfig_t * modem)
 {
-	uint32_t freq_k = (((uint64_t)modem->baseFreqKhz << 16) / XTAL_FREQ_KHZ);
+	uint32_t freq_k = (((uint64_t)modem->frequencyKhz << 16) / XTAL_FREQ_KHZ);
 	uint8_t freq[3] = {
 		freq_k >> 16,
 		freq_k >> 8,
@@ -397,7 +397,7 @@ static void CC1101_WriteModem(CC1101Modem_t * modem)
 	};
 	CC1101_WriteRegs(REG_FREQ2, freq, sizeof(freq));
 
-	uint32_t spacing_k = (modem->chanSpacingKhz << 18) / XTAL_FREQ_KHZ;
+	uint32_t spacing_k = (modem->channelKhz << 18) / XTAL_FREQ_KHZ;
 	Exponent_t spacing = Exponent_Encode(spacing_k, 8, 2);
 
 	uint32_t baud_k = (((uint64_t)modem->baud << 28) / XTAL_FREQ);

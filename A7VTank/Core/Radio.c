@@ -13,7 +13,9 @@
  * PRIVATE DEFINITIONS
  */
 
-#define BASE_FREQ			915000000
+#define RF_FREQUENCY_KHZ	917000
+#define RF_CHANNEL_KHZ		80
+#define RF_BAUD				38400
 #define DEFAULT_POWER		10
 
 #define TX_PERIOD			100
@@ -41,13 +43,18 @@ void Radio_Init(uint8_t address)
 {
 	gAddress = address;
 
-	CC1101Config_t cc1101_config = {
+	CC1101Config_t config = {
 			.address = gAddress,
 			.channel = gAddress,
 			.power = DEFAULT_POWER,
-			.baseFreq = BASE_FREQ,
 	};
-	CC1101_Init(&cc1101_config);
+	CC1101ModemConfig_t modem = {
+			.frequencyKhz = RF_FREQUENCY_KHZ,
+			.channelKhz = RF_CHANNEL_KHZ,
+			.baud = RF_BAUD,
+	};
+
+	CC1101_Init(&modem, &config);
 }
 
 void Radio_Reply(MSG_Tank_t * msg)
