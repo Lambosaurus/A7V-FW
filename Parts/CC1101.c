@@ -9,9 +9,20 @@
  * PRIVATE DEFINITIONS
  */
 
+// Settings
+
 #define SPI_BITRATE			6000000  // 6MHz
 #define XTAL_FREQ			26000000 // 26MHz
 #define XTAL_FREQ_KHZ		(XTAL_FREQ/1000)
+#define SYNC_WORD			0x5743
+
+#define BYTE0(b)	((uint8_t)b)
+#define BYTE1(b)	((uint8_t)(b >> 8))
+#define BYTE2(b)	((uint8_t)(b >> 16))
+#define BYTE3(b)	((uint8_t)(b >> 24))
+
+
+// Comms helpers
 
 #define ADDR_BURST	0x40
 #define ADDR_READ	0x80
@@ -23,6 +34,7 @@
 
 #define STATUS_TO_STATE(s) 	((s >> 4) & 0x07)
 #define ENTER_RX_TIMEOUT	50
+
 
 // CC1101 CONFIG REGSITER
 #define REG_IOCFG2       0x00        // GDO2 output pin configuration
@@ -114,10 +126,12 @@
 #define REG_PATABLE      0x3E
 #define REG_FIFO       	 0x3F
 
+// FREQ BITS
+#define FREQ_DIVIDER(khz)		(((uint64_t)khz << 16) / XTAL_FREQ_KHZ)
+
 // MDMCFG BITS
 #define MDMCFG1_FEC_EN			0x80
 #define MDMCFG1_PREAMBLE_4B		0x20 // 1m2e exponential
-
 #define MDMCFG2_MANCHESTER_EN	0x08
 #define MCMCFG2_SYNC_1516		0x01
 #define MDMCFG2_SYNC_1616		0x02
@@ -130,7 +144,12 @@
 #define MDMCFG2_MOD_MSK			0x70
 #define MDMCFG2_DCFILT_OFF		0x80
 
-#define MDMCFG4_BW_58K			0xF0 // 2m2e exponential
+#define MDM_CH_DIVIDER(khz)			((khz << 18) / XTAL_FREQ_KHZ)
+#define MDM_BAUD_DIVIDER(baud)		(((uint64_t)baud << 28) / XTAL_FREQ)
+#define MDM_BW_DIVIDER(bw)			(XTAL_FREQ / (8 * bw))
+
+// DEVIATN BITS
+#define DEVIATN_DIVIDER(khz)		((khz << 17) / XTAL_FREQ_KHZ)
 
 /*
  * PRIVATE TYPES
@@ -157,7 +176,7 @@ typedef struct {
  */
 
 static void CC1101_WriteConfig(CC1101Config_t * config);
-static void CC1101_WriteModemConfig(CC1101ModemConfig_t * modem);
+static void CC1101_WriteModemConfig(void);
 
 static uint8_t CC1101_ReadStatus(uint8_t stat);
 static void CC1101_Command(uint8_t cmd);
@@ -181,57 +200,57 @@ static void CC1101_GD0_IRQHandler(void);
 // L - reviewed by Lambo
 // D - deferred for later programming step
 // A - assumed to be valid
-static const uint8_t cc1100_GFSK_38_4_kb[] = {
-	0x2E,  // IOCFG2       L GDO2 Output Pin Configuration
-	0x2E,  // IOCFG1       L GDO1 Output Pin Configuration
-	0x07,  // IOCFG0       L GDO0 Output Pin Configuration
-	0x07,  // FIFOTHR      L RX FIFO and TX FIFO Thresholds
-	0x57,  // SYNC1        L Sync Word, High Byte
-	0x43,  // SYNC0        L Sync Word, Low Byte
-	0x3E,  // PKTLEN       L Packet Length
-	0x0A,  // PKTCTRL1     L Packet Automation Control
-	0x45,  // PKTCTRL0     L Packet Automation Control
-	0x00,  // ADDR         D Device Address
-	0x00,  // CHANNR       D Channel Number
-	0x06,  // FSCTRL1      A Frequency Synthesizer Control
-	0x00,  // FSCTRL0      A Frequency Synthesizer Control
-	0x00,  // FREQ2        D Frequency Control Word, High Byte
-	0x00,  // FREQ1        D Frequency Control Word, Middle Byte
-	0x00,  // FREQ0        D Frequency Control Word, Low Byte
-	0x00,  // MDMCFG4      D Modem Configuration
-	0x00,  // MDMCFG3      D Modem Configuration
-	0x00,  // MDMCFG2      D Modem Configuration
-	0x00,  // MDMCFG1      D Modem Configuration
-	0x00,  // MDMCFG0      D Modem Configuration
-	0x34,  // DEVIATN      A Modem Deviation Setting
-	0x07,  // MCSM2        A Main Radio Control State Machine Configuration
-	0x0C,  // MCSM1        A Main Radio Control State Machine Configuration
-	0x18,  // MCSM0        A Main Radio Control State Machine Configuration
-	0x16,  // FOCCFG       A Frequency Offset Compensation Configuration
-	0x6C,  // BSCFG        A Bit Synchronization Configuration
-	0x43,  // AGCCTRL2     A AGC Control
-	0x40,  // AGCCTRL1     A AGC Control
-	0x91,  // AGCCTRL0     A AGC Control
-	0x02,  // WOREVT1      A High Byte Event0 Timeout
-	0x26,  // WOREVT0      A Low Byte Event0 Timeout
-	0x09,  // WORCTRL      A Wake On Radio Control
-	0x56,  // FREND1       A Front End RX Configuration
-	0x17,  // FREND0       D Front End TX Configuration
-	0xA9,  // FSCAL3       A Frequency Synthesizer Calibration
-	0x0A,  // FSCAL2       A Frequency Synthesizer Calibration
-	0x00,  // FSCAL1       A Frequency Synthesizer Calibration
-	0x11,  // FSCAL0       A Frequency Synthesizer Calibration
-	0x41,  // RCCTRL1      A RC Oscillator Configuration
-	0x00,  // RCCTRL0      A RC Oscillator Configuration
-	0x59,  // FSTEST       A Frequency Synthesizer Calibration Control,
-	0x7F,  // PTEST        A Production Test
-	0x3F,  // AGCTEST      A AGC Test
-	0x81,  // TEST2        A Various Test Settings
-	0x3F,  // TEST1        A Various Test Settings
-	0x0B   // TEST0        A Various Test Settings
+static const uint8_t gCC1101BaseConfig[] = {
+	0x2E,  				// IOCFG2       L GDO2 Output Pin Configuration
+	0x2E,  				// IOCFG1       L GDO1 Output Pin Configuration
+	0x07,  				// IOCFG0       L GDO0 Output Pin Configuration
+	0x07,  				// FIFOTHR      L RX FIFO and TX FIFO Thresholds
+	BYTE1(SYNC_WORD),  	// SYNC1        L Sync Word, High Byte
+	BYTE0(SYNC_WORD),  	// SYNC0        L Sync Word, Low Byte
+	0x3E,  				// PKTLEN       L Packet Length
+	0x0A,  				// PKTCTRL1     L Packet Automation Control
+	0x45,  				// PKTCTRL0     L Packet Automation Control
+	0x00,  				// ADDR         D Device Address
+	0x00,  				// CHANNR       D Channel Number
+	0x06,  				// FSCTRL1      A Frequency Synthesizer Control
+	0x00,  				// FSCTRL0      A Frequency Synthesizer Control
+	BYTE2(FREQ_DIVIDER(CC1101_FREQ_KHZ)),  // FREQ2        L Frequency Control Word, High Byte
+	BYTE1(FREQ_DIVIDER(CC1101_FREQ_KHZ)),  // FREQ1        L Frequency Control Word, Middle Byte
+	BYTE0(FREQ_DIVIDER(CC1101_FREQ_KHZ)),  // FREQ0        L Frequency Control Word, Low Byte
+	0x00,  				// MDMCFG4      D Modem Configuration
+	0x00,  				// MDMCFG3      D Modem Configuration
+	0x00,  				// MDMCFG2      D Modem Configuration
+	0x00,  				// MDMCFG1      D Modem Configuration
+	0x00,  				// MDMCFG0      D Modem Configuration
+	0x00,  				// DEVIATN      D Modem Deviation Setting.
+	0x07,  				// MCSM2        A Main Radio Control State Machine Configuration
+	0x0C,  				// MCSM1        A Main Radio Control State Machine Configuration
+	0x18, 				// MCSM0        A Main Radio Control State Machine Configuration
+	0x16,  				// FOCCFG       A Frequency Offset Compensation Configuration
+	0x6C,  				// BSCFG        A Bit Synchronization Configuration
+	0x43,  				// AGCCTRL2     A AGC Control
+	0x40,  				// AGCCTRL1     A AGC Control
+	0x91,  				// AGCCTRL0     A AGC Control
+	0x02, 				// WOREVT1      A High Byte Event0 Timeout
+	0x26,  				// WOREVT0      A Low Byte Event0 Timeout
+	0x09,  				// WORCTRL      A Wake On Radio Control
+	0x56,  				// FREND1       A Front End RX Configuration
+	0x00,  				// FREND0       D Front End TX Configuration
+	0xA9,  				// FSCAL3       A Frequency Synthesizer Calibration
+	0x0A,  				// FSCAL2       A Frequency Synthesizer Calibration
+	0x00,  				// FSCAL1       A Frequency Synthesizer Calibration
+	0x11,  				// FSCAL0       A Frequency Synthesizer Calibration
+	0x41,  				// RCCTRL1      A RC Oscillator Configuration
+	0x00,  				// RCCTRL0      A RC Oscillator Configuration
+	0x59,  				// FSTEST       A Frequency Synthesizer Calibration Control,
+	0x7F,  				// PTEST        A Production Test
+	0x3F,  				// AGCTEST      A AGC Test
+	0x81,  				// TEST2        A Various Test Settings
+	0x3F,  				// TEST1        A Various Test Settings
+	0x0B   				// TEST0        A Various Test Settings
 };
 
-static const uint8_t cc1100_pa_table[] = {
+static const uint8_t gCC1101PaTable[] = {
 	0x0B,
 	0x1B,
 	0x6D,
@@ -246,7 +265,7 @@ static const uint8_t cc1100_pa_table[] = {
  * PUBLIC FUNCTIONS
  */
 
-bool CC1101_Init(CC1101ModemConfig_t * modem, CC1101Config_t * config)
+bool CC1101_Init(CC1101Config_t * config)
 {
 	GPIO_EnableOutput(CC1101_CS_GPIO, CC1101_CS_PIN, GPIO_PIN_SET);
 	CC1101_SPIStart();
@@ -256,9 +275,9 @@ bool CC1101_Init(CC1101ModemConfig_t * modem, CC1101Config_t * config)
 	bool success = version != 0x00 && version != 0xFF;
 	if (success)
 	{
-		CC1101_WriteRegs(REG_IOCFG2, cc1100_GFSK_38_4_kb, sizeof(cc1100_GFSK_38_4_kb));
-		CC1101_WriteRegs(REG_PATABLE, cc1100_pa_table, sizeof(cc1100_pa_table));
-		CC1101_WriteModemConfig(modem);
+		CC1101_WriteRegs(REG_IOCFG2, gCC1101BaseConfig, sizeof(gCC1101BaseConfig));
+		CC1101_WriteRegs(REG_PATABLE, gCC1101PaTable, sizeof(gCC1101PaTable));
+		CC1101_WriteModemConfig();
 		CC1101_WriteConfig(config);
 		CC1101_EnterRx();
 
@@ -387,29 +406,30 @@ static Exponent_t Exponent_Encode(uint32_t v, uint32_t mbits, uint32_t ebits)
 //	return ((1 << mbits) | exp.m) << exp.e;
 //}
 
-static void CC1101_WriteModemConfig(CC1101ModemConfig_t * modem)
+static void CC1101_WriteModemConfig(void)
 {
-	uint32_t freq_k = (((uint64_t)modem->frequencyKhz << 16) / XTAL_FREQ_KHZ);
-	uint8_t freq[3] = {
-		freq_k >> 16,
-		freq_k >> 8,
-		freq_k,
-	};
-	CC1101_WriteRegs(REG_FREQ2, freq, sizeof(freq));
+	uint8_t regs[6];
 
-	uint32_t spacing_k = (modem->channelKhz << 18) / XTAL_FREQ_KHZ;
-	Exponent_t spacing = Exponent_Encode(spacing_k, 8, 2);
+	Exponent_t channel = Exponent_Encode(MDM_CH_DIVIDER(CC1101_CH_KHZ), 8, 2);
+	Exponent_t baud = Exponent_Encode(MDM_BAUD_DIVIDER(CC1101_BAUD), 8, 4);
+	Exponent_t bandwidth = Exponent_Encode(MDM_BW_DIVIDER(CC1101_BANDWIDTH_KHZ), 2, 2);
 
-	uint32_t baud_k = (((uint64_t)modem->baud << 28) / XTAL_FREQ);
-	Exponent_t baud = Exponent_Encode(baud_k, 8, 4);
+	regs[0] = baud.e | (bandwidth.m << 4) | (bandwidth.e << 6);	// MDMCFG4
+	regs[1] = baud.m;											// MDMCFG3
+	regs[2] = MDMCFG2_SYNC_3032 | MDMCFG2_MOD_GFSK;				// MDMCFG2
+	regs[3] = channel.e | MDMCFG1_PREAMBLE_4B;					// MDMCFG1
+	regs[4] = channel.m;										// MDMCFG0
+#if (CC1101_EN_FEC)
+	regs[3] |= MDMCFG1_FEC_EN;
+#endif
+#if (!CC1101_OPTIMISE_SENS && CC1101_BAUD < 250000)
+	regs[2] |= MDMCFG2_DCFILT_OFF;
+#endif
 
-	uint8_t mdmcfg[5];
-	mdmcfg[0] = spacing.m;
-	mdmcfg[1] = spacing.e | MDMCFG1_FEC_EN | MDMCFG1_PREAMBLE_4B;
-	mdmcfg[2] = MDMCFG2_SYNC_3032 | MDMCFG2_MOD_GFSK;
-	mdmcfg[3] = baud.m;
-	mdmcfg[4] = baud.e | MDMCFG4_BW_58K;
-	CC1101_WriteRegs(REG_MDMCFG4, mdmcfg, sizeof(mdmcfg));
+	Exponent_t deviation = Exponent_Encode(DEVIATN_DIVIDER(CC1101_DEV_KHZ), 3, 3);
+	regs[5] = deviation.m | (deviation.e << 4);					// DEVIATN
+
+	CC1101_WriteRegs(REG_MDMCFG4, regs, sizeof(regs));
 }
 
 
@@ -425,6 +445,7 @@ static void CC1101_WriteConfig(CC1101Config_t * config)
     else if (dBm <= 5)   { pa = 0x05; }
     else if (dBm <= 7)   { pa = 0x06; }
     else 			     { pa = 0x07; }
+    pa |= 0x10; // Tx buffer current
 	CC1101_WriteRegs(REG_FREND0, &pa, 1);
 
 	// These two parameters are consecutive

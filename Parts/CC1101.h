@@ -7,6 +7,29 @@
  * PUBLIC DEFINITIONS
  */
 
+#ifndef CC1101_BAUD
+#define CC1101_BAUD				38400
+#endif
+#ifndef CC1101_FREQ_KHZ
+#define CC1101_FREQ_KHZ			915000
+#endif
+#ifndef CC1101_DEV_KHZ
+#define CC1101_DEV_KHZ			20
+#endif
+#ifndef CC1101_BANDWIDTH_KHZ
+// The bandwidth can be estimated using BAUD + (DEVIATION * 2)
+#define CC1101_BANDWIDTH_KHZ	80
+#endif
+#ifndef CC1101_CH_KHZ
+#define CC1101_CH_KHZ			100
+#endif
+#ifndef CC1101_EN_FEC
+#define CC1101_EN_FEC			1
+#endif
+#ifndef CC1101_OPTIMISE_SENS
+#define CC1101_OPTIMISE_SENS 	1
+#endif
+
 /*
  * PUBLIC TYPES
  */
@@ -17,17 +40,11 @@ typedef struct {
 	int8_t power;
 } CC1101Config_t;
 
-typedef struct {
-	uint32_t frequencyKhz;
-	uint16_t channelKhz;
-	uint32_t baud;
-} CC1101ModemConfig_t;
-
 /*
  * PUBLIC FUNCTIONS
  */
 
-bool CC1101_Init(CC1101ModemConfig_t * modem, CC1101Config_t * config);
+bool CC1101_Init(CC1101Config_t * config);
 void CC1101_Deinit(void);
 
 // These can be updated on the fly

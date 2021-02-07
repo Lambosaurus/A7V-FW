@@ -72,6 +72,7 @@ extern "C" {
 #define CC1101_SPI			SPI_1
 #define CC1101_MISO_GPIO	GPIOB
 #define CC1101_MISO_PIN		GPIO_PIN_4
+#define CC1101_FREQ_KHZ		917000
 #define USE_EXTI_0
 
 #define LIS2_CS_GPIO		GPIOB
