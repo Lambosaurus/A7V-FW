@@ -40,12 +40,13 @@ void Radio_Init(uint8_t address)
 {
 	gAddress = address;
 
-	CC1101Config_t cc1101_config = {
+	CC1101Config_t config = {
 			.address = gAddress,
 			.channel = gAddress,
 			.power = DEFAULT_POWER,
 	};
-	CC1101_Init(&cc1101_config);
+
+	CC1101_Init(&config);
 }
 
 void Radio_Reply(MSG_Tank_t * msg)

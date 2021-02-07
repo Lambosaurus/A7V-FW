@@ -7,12 +7,31 @@
  * PUBLIC DEFINITIONS
  */
 
-/*
- * PUBLIC TYPES
- */
+#ifndef CC1101_BAUD
+#define CC1101_BAUD				38400
+#endif
+#ifndef CC1101_FREQ_KHZ
+#define CC1101_FREQ_KHZ			915000
+#endif
+#ifndef CC1101_DEV_KHZ
+#define CC1101_DEV_KHZ			20
+#endif
+#ifndef CC1101_BANDWIDTH_KHZ
+// The bandwidth can be estimated using BAUD + (DEVIATION * 2)
+#define CC1101_BANDWIDTH_KHZ	80
+#endif
+#ifndef CC1101_CH_KHZ
+#define CC1101_CH_KHZ			100
+#endif
+#ifndef CC1101_EN_FEC
+#define CC1101_EN_FEC			1
+#endif
+#ifndef CC1101_OPTIMISE_SENS
+#define CC1101_OPTIMISE_SENS 	1
+#endif
 
 /*
- * PUBLIC FUNCTIONS
+ * PUBLIC TYPES
  */
 
 typedef struct {
@@ -20,6 +39,10 @@ typedef struct {
 	uint8_t address;
 	int8_t power;
 } CC1101Config_t;
+
+/*
+ * PUBLIC FUNCTIONS
+ */
 
 bool CC1101_Init(CC1101Config_t * config);
 void CC1101_Deinit(void);
