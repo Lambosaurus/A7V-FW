@@ -115,8 +115,19 @@
 #define REG_FIFO       	 0x3F
 
 // MDMCFG BITS
-#define MDMCFG1_FEC_EN		0x80
+#define MDMCFG1_FEC_EN			0x80
 
+#define MDMCFG2_MANCHESTER_EN	0x08
+#define MCMCFG2_SYNC_1516		0x01
+#define MDMCFG2_SYNC_1616		0x02
+#define MDMCFG2_SYNC_3032		0x03
+#define MDMCFG2_SYNC_CARRIER	0x04
+#define MDMCFG2_MOD_2FSK		0x00
+#define MDMCFG2_MOD_GFSK		0x10
+#define MDMCFG2_MOD_ASKOOK		0x30
+#define MDMCFG2_MOD_4FSK		0x40
+#define MDMCFG2_MOD_MSK			0x70
+#define MDMCFG2_DCFILT_OFF		0x80
 
 /*
  * PRIVATE TYPES
@@ -396,10 +407,22 @@ static void CC1101_WriteModem(CC1101Modem_t * modem)
 	Exponent_t spacing;
 	Exponent_Encode(&spacing, spacing_k, 8, 2);
 
+	uint32_t baud_k = (((uint64_t)modem->baud << 28) / XTAL_FREQ);
+	Exponent_t baud;
+	Exponent_Encode(&baud, baud_k, 8, 4);
+
+	uint32_t bw = 60000;
+	uint32_t bandwidth_k = XTAL_FREQ / (8 * bw);
+	Exponent_t bandwidth;
+	Exponent_Encode(&bandwidth, bandwidth_k, 2, 2);
+
 	uint8_t preamble = 2; // This is actually a 3 bit exponential (2 bit e, 1 bit m)
 	uint8_t mdmcfg[5];
 	mdmcfg[0] = spacing.m;
 	mdmcfg[1] = spacing.e | MDMCFG1_FEC_EN | (preamble << 4);
+	mdmcfg[2] = MDMCFG2_SYNC_1616 | MDMCFG2_MOD_GFSK;
+	mdmcfg[3] = baud.m;
+	mdmcfg[4] = baud.e | (bandwidth.m << 4) | (bandwidth.e << 6);
 }
 
 
