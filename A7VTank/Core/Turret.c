@@ -11,7 +11,7 @@
 #define ARC_MAX		1000
 
 #define RATE_MAX	127
-#define RATE_TIME	750 // Time to go from 0 to ARC_MAX
+#define RATE_TIME	550 // Time to go from 0 to ARC_MAX
 #define POS_MAX		(RATE_MAX * RATE_TIME)
 
 /*
