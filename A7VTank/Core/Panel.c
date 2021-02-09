@@ -265,8 +265,14 @@ static void Panel_Fire(void)
 
 static void Panel_SetThrottle(int8_t x, int8_t y)
 {
-	int16_t left = (y + x) * 2;
-	int16_t right = (y - x) * 2;
+	int32_t my = y * MOTOR_MAX / 127;
+
+	// The gain of x is halved as we throttle up
+	int32_t xgain = MOTOR_MAX - (abs(my) / 2);
+	int32_t mx = x * xgain / 127;
+
+	int16_t left = my + mx;
+	int16_t right = my - mx;
 	Motor_Throttle(left, right);
 }
 
