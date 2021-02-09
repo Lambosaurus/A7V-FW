@@ -12,6 +12,7 @@
 #include "Sound.h"
 #include "Turret.h"
 
+#include <stdlib.h>
 
 /*
  * PRIVATE DEFINITIONS
@@ -30,8 +31,6 @@
 #define CELL_LOW_MV			1100
 #define CELL_COUNT			4
 #define VBATT_LOW_MV		(CELL_LOW_MV * CELL_COUNT)
-
-#define NOTE_COUNT(notes)	(sizeof(notes) / sizeof(Note_t))
 
 #define BASE_HEALTH			3
 
