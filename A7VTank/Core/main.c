@@ -24,6 +24,7 @@ int main(void)
 
 	uint8_t address = ADDR_Load();
 
+	CORE_Delay(100);
 	Radio_Init(address);
 	Sound_Init();
 	Motor_Init();

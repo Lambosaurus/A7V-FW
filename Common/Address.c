@@ -35,7 +35,7 @@ uint8_t ADDR_Load(void)
 
 void ADDR_Save(uint8_t address)
 {
-	EEPROM_Read(0, &address, sizeof(address));
+	EEPROM_Write(0, &address, sizeof(address));
 }
 
 /*
