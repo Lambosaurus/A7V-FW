@@ -2,6 +2,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "Board.h"
 #include "Core.h"
+#include "WDG.h"
 
 #include "Panel.h"
 #include "Radio.h"
@@ -41,6 +42,8 @@ int main(void)
 	};
 	LIS2_Init(&lis_cfg);
 
+	WDG_Init(100);
+
 	while (1)
 	{
 		Timer_Tick(CORE_GetTick());
@@ -65,6 +68,7 @@ int main(void)
 			Panel_Hit(true);
 		}
 
+		WDG_Kick();
 		CORE_Idle();
 	}
 }
