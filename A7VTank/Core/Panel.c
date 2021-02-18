@@ -110,7 +110,7 @@ void Panel_Recieve(MSG_Remote_t * msg)
 		Radio_Reply(&tx);
 	}
 
-	if (msg->altButton)
+	if (msg->altButton || msg->right.z)
 	{
 		if (gState.ready)
 		{
