@@ -42,7 +42,7 @@ int main(void)
 	};
 	LIS2_Init(&lis_cfg);
 
-	WDG_Init(100);
+	WDG_Init(50);
 
 	while (1)
 	{

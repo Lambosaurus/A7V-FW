@@ -32,7 +32,7 @@
 #define CELL_COUNT			4
 #define VBATT_LOW_MV		(CELL_LOW_MV * CELL_COUNT)
 
-#define BASE_HEALTH			3
+#define BASE_HEALTH			4
 
 /*
  * PRIVATE TYPES
