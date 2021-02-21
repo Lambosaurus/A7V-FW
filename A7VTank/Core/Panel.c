@@ -2,6 +2,7 @@
 #include "GPIO.h"
 #include "Core.h"
 #include "ADC.h"
+#include "WDG.h"
 
 #include "Panel.h"
 #include "Button.h"
@@ -183,8 +184,7 @@ void Panel_Powerup(void)
 	}
 	else
 	{
-		// Wait for death.
-		while(1);
+		Panel_Powerdown();
 	}
 }
 
@@ -193,10 +193,15 @@ void Panel_Powerdown(void)
 	while (Button_Update(&gPwrButton) & BTN_Held)
 	{
 		// wait for button up - otherwise the device may reboot
+		WDG_Kick();
 		CORE_Idle();
 	}
 	GPIO_Reset(PWR_HOLD_GPIO, PWR_HOLD_PIN);
-	while(1);
+	while (1)
+	{
+		WDG_Kick();
+		CORE_Idle();
+	}
 }
 
 void Panel_Hit(bool bypass)
