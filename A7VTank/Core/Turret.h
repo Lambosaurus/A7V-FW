@@ -16,6 +16,7 @@ void Turret_Deinit(void);
 void Turret_Update(void);
 void Turret_Stop(void);
 void Turret_SetRate(int8_t rate);
+void Turret_SetTarget(int16_t target);
 
 /*
  * PUBLIC FUNCTIONS

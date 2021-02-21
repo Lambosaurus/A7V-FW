@@ -78,6 +78,7 @@ static struct {
 	bool disabled;
 	bool booted;
 	bool shielded;
+	bool turretSeeking;
 } gState = { 0 };
 
 /*
@@ -111,17 +112,30 @@ void Panel_Recieve(MSG_Remote_t * msg)
 		Radio_Reply(&tx);
 	}
 
-	if (msg->altButton || msg->right.z)
-	{
-		if (gState.ready)
-		{
-			Panel_Fire();
-		}
-	}
+
 
 	if (!gState.disabled)
 	{
-		Turret_SetRate(msg->right.x);
+		if (msg->altButton || msg->right.z)
+		{
+			if (gState.ready)
+			{
+				Panel_Fire();
+			}
+		}
+
+		if (msg->left.z)
+		{
+			Turret_SetTarget(0);
+			gState.turretSeeking = true;
+		}
+		else if (msg->right.x || !gState.turretSeeking)
+		{
+			// Once the turret is in seek mode, do  not disrupt it with a 0 rate command
+			Turret_SetRate(msg->right.x);
+			gState.turretSeeking = false;
+		}
+
 		Panel_SetThrottle(msg->left.x, msg->left.y);
 	}
 
@@ -257,14 +271,11 @@ static LEDColor_t Panel_SelectLeds(void)
 
 static void Panel_Fire(void)
 {
-	if (!gState.disabled)
-	{
-		gState.ready = false;
-		Timer_Reload(&gReloadTimer);
-		Sound_Halt();
-		IR_Fire();
-		Sound_Queue(Sound_Fire);
-	}
+	gState.ready = false;
+	Timer_Reload(&gReloadTimer);
+	Sound_Halt();
+	IR_Fire();
+	Sound_Queue(Sound_Fire);
 }
 
 static void Panel_SetThrottle(int8_t x, int8_t y)
