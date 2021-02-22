@@ -220,7 +220,7 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 			break;
 		}
 
-		switch (cfg->int_src)
+		switch (cfg->int_src & ~LIS2_IntSrc_XYZ)
 		{
 		case LIS2_IntSrc_None:
 			break;
@@ -231,7 +231,10 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 		case LIS2_IntSrc_Shock:
 			ctrl[1] |= CR2_HP_INT1 | CR2_HPM_NORM | CR2_HPCF_ODR_50; // | CR2_HPCF_ODR_400;
 			ctrl[2] |= CR3_I1_AOI1;
-			i1cfg |= INT_CFG_OR | INT_CFG_XYZ_H;
+			i1cfg |= INT_CFG_OR;
+			if (cfg->int_src & LIS2_IntSrc_X) { i1cfg |= INT_CFG_X_H; }
+			if (cfg->int_src & LIS2_IntSrc_Y) { i1cfg |= INT_CFG_Y_H; }
+			if (cfg->int_src & LIS2_IntSrc_Z) { i1cfg |= INT_CFG_Z_H; }
 			break;
 		}
 

@@ -36,8 +36,8 @@ int main(void)
 		.frequency = 100,
 		.resolution = LIS2_Res_12B,
 		.scale_g = 4,
-		.int_src = LIS2_IntSrc_Shock,
-		.threshold = 1500
+		.int_src = LIS2_IntSrc_Shock | LIS2_IntSrc_X | LIS2_IntSrc_Y,
+		.threshold = 1000
 	};
 	LIS2_Init(&lis_cfg);
 

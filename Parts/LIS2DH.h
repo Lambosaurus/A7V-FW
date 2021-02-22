@@ -18,9 +18,13 @@ typedef enum {
 } LIS2_Res_t;
 
 typedef enum {
-	LIS2_IntSrc_None,
-	LIS2_IntSrc_DataReady,
-	LIS2_IntSrc_Shock,
+	LIS2_IntSrc_None 		= 0,
+	LIS2_IntSrc_X 			= 1,
+	LIS2_IntSrc_Y 			= 2,
+	LIS2_IntSrc_Z 			= 4,
+	LIS2_IntSrc_XYZ 		= LIS2_IntSrc_X | LIS2_IntSrc_Y | LIS2_IntSrc_Z,
+	LIS2_IntSrc_DataReady 	= 8,
+	LIS2_IntSrc_Shock 		= 9,
 } LIS2_IntSrc_t;
 
 typedef struct {
