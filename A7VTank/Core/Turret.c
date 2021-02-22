@@ -14,9 +14,17 @@
 #define RATE_TIME	550 // Time to go from 0 to ARC_MAX
 #define POS_MAX		(RATE_MAX * RATE_TIME)
 
+#define CLAMP(value, low, high)	((value < low) ? low : (value > high) ? high : value)
+
 /*
  * PRIVATE TYPES
  */
+
+typedef enum {
+	TurretMode_Idle,
+	TurretMode_Rate,
+	TurretMode_Pos,
+} TurretMode_t;
 
 /*
  * PRIVATE PROTOTYPES
@@ -31,9 +39,13 @@ static void Turret_UpdatePosition(void);
 
 static struct {
 	int32_t pos;
-	int8_t rate;
 	int16_t pulse;
 	uint32_t tick;
+	struct {
+		int8_t rate;
+		int32_t pos;
+		TurretMode_t mode;
+	} target;
 } gState;
 
 /*
@@ -43,6 +55,7 @@ static struct {
 void Turret_Init(void)
 {
 	Servo_Init();
+	gState.target.mode = TurretMode_Idle;
 }
 
 void Turret_Deinit(void)
@@ -63,12 +76,19 @@ void Turret_Update(void)
 
 void Turret_Stop(void)
 {
-	Turret_SetRate(0);
+	gState.target.mode = TurretMode_Idle;
 }
 
 void Turret_SetRate(int8_t rate)
 {
-	gState.rate = rate;
+	gState.target.rate = rate;
+	gState.target.mode = TurretMode_Rate;
+}
+
+void Turret_SetTarget(int16_t target)
+{
+	gState.target.pos = CLAMP(target, -POS_MAX, POS_MAX);
+	gState.target.mode = TurretMode_Pos;
 }
 
 /*
@@ -77,24 +97,41 @@ void Turret_SetRate(int8_t rate)
 
 void Turret_UpdatePosition(void)
 {
-	if (gState.rate != 0)
+	switch (gState.target.mode)
 	{
-		gState.pos += gState.rate;
-		if (gState.pos > POS_MAX)
+	case TurretMode_Rate:
+		gState.pos += gState.target.rate;
+		gState.pos = CLAMP(gState.pos, -POS_MAX, POS_MAX);
+		break;
+	case TurretMode_Pos:
+		if (gState.target.pos > gState.pos)
 		{
-			gState.pos = POS_MAX;
+			gState.pos += RATE_MAX;
+			if (gState.pos >= gState.target.pos)
+			{
+				gState.pos = gState.target.pos;
+				Turret_Stop();
+			}
 		}
-		else if (gState.pos < -POS_MAX)
+		else
 		{
-			gState.pos = -POS_MAX;
+			gState.pos -= RATE_MAX;
+			if (gState.pos <= gState.target.pos)
+			{
+				gState.pos = gState.target.pos;
+				Turret_Stop();
+			}
 		}
+		break;
+	case TurretMode_Idle:
+		return;
+	}
 
-		int16_t pulse = Turret_GetPulse(gState.pos);
-		if (pulse != gState.pulse)
-		{
-			gState.pulse = pulse;
-			Servo_SetPulse(gState.pulse);
-		}
+	int16_t pulse = Turret_GetPulse(gState.pos);
+	if (pulse != gState.pulse)
+	{
+		gState.pulse = pulse;
+		Servo_SetPulse(gState.pulse);
 	}
 }
 

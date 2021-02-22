@@ -11,6 +11,7 @@ extern "C" {
 
 #define USE_GPIO_IRQS
 #define USE_TIM_IRQS
+#define USE_WDG
 
 #define UART1_GPIO		GPIOA
 #define UART1_PINS		(GPIO_PIN_9 | GPIO_PIN_10)

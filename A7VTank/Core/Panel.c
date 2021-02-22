@@ -2,6 +2,7 @@
 #include "GPIO.h"
 #include "Core.h"
 #include "ADC.h"
+#include "WDG.h"
 
 #include "Panel.h"
 #include "Button.h"
@@ -32,7 +33,7 @@
 #define CELL_COUNT			4
 #define VBATT_LOW_MV		(CELL_LOW_MV * CELL_COUNT)
 
-#define BASE_HEALTH			3
+#define BASE_HEALTH			4
 
 /*
  * PRIVATE TYPES
@@ -77,6 +78,7 @@ static struct {
 	bool disabled;
 	bool booted;
 	bool shielded;
+	bool turretSeeking;
 } gState = { 0 };
 
 /*
@@ -110,17 +112,30 @@ void Panel_Recieve(MSG_Remote_t * msg)
 		Radio_Reply(&tx);
 	}
 
-	if (msg->altButton)
-	{
-		if (gState.ready)
-		{
-			Panel_Fire();
-		}
-	}
+
 
 	if (!gState.disabled)
 	{
-		Turret_SetRate(msg->right.x);
+		if (msg->altButton || msg->right.z)
+		{
+			if (gState.ready)
+			{
+				Panel_Fire();
+			}
+		}
+
+		if (msg->left.z)
+		{
+			Turret_SetTarget(0);
+			gState.turretSeeking = true;
+		}
+		else if (msg->right.x || !gState.turretSeeking)
+		{
+			// Once the turret is in seek mode, do  not disrupt it with a 0 rate command
+			Turret_SetRate(msg->right.x);
+			gState.turretSeeking = false;
+		}
+
 		Panel_SetThrottle(msg->left.x, msg->left.y);
 	}
 
@@ -183,8 +198,7 @@ void Panel_Powerup(void)
 	}
 	else
 	{
-		// Wait for death.
-		while(1);
+		Panel_Powerdown();
 	}
 }
 
@@ -193,10 +207,15 @@ void Panel_Powerdown(void)
 	while (Button_Update(&gPwrButton) & BTN_Held)
 	{
 		// wait for button up - otherwise the device may reboot
+		WDG_Kick();
 		CORE_Idle();
 	}
 	GPIO_Reset(PWR_HOLD_GPIO, PWR_HOLD_PIN);
-	while(1);
+	while (1)
+	{
+		WDG_Kick();
+		CORE_Idle();
+	}
 }
 
 void Panel_Hit(bool bypass)
@@ -252,14 +271,11 @@ static LEDColor_t Panel_SelectLeds(void)
 
 static void Panel_Fire(void)
 {
-	if (!gState.disabled)
-	{
-		gState.ready = false;
-		Timer_Reload(&gReloadTimer);
-		Sound_Halt();
-		IR_Fire();
-		Sound_Queue(Sound_Fire);
-	}
+	gState.ready = false;
+	Timer_Reload(&gReloadTimer);
+	Sound_Halt();
+	IR_Fire();
+	Sound_Queue(Sound_Fire);
 }
 
 static void Panel_SetThrottle(int8_t x, int8_t y)
