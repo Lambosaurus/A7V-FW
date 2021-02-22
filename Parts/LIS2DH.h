@@ -19,12 +19,12 @@ typedef enum {
 
 typedef enum {
 	LIS2_IntSrc_None 		= 0,
-	LIS2_IntSrc_X 			= 1,
-	LIS2_IntSrc_Y 			= 2,
-	LIS2_IntSrc_Z 			= 4,
+	LIS2_IntSrc_DataReady 	= 1,
+	LIS2_IntSrc_Shock 		= 2,
+	LIS2_IntSrc_X 			= 0x100,
+	LIS2_IntSrc_Y 			= 0x200,
+	LIS2_IntSrc_Z 			= 0x400,
 	LIS2_IntSrc_XYZ 		= LIS2_IntSrc_X | LIS2_IntSrc_Y | LIS2_IntSrc_Z,
-	LIS2_IntSrc_DataReady 	= 8,
-	LIS2_IntSrc_Shock 		= 9,
 } LIS2_IntSrc_t;
 
 typedef struct {
