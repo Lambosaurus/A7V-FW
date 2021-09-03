@@ -281,7 +281,8 @@ bool CC1101_Init(CC1101Config_t * config)
 		CC1101_WriteConfig(config);
 		CC1101_EnterRx();
 
-		GPIO_EnableIRQ(CC1101_GD0_GPIO, CC1101_GD0_PIN, GPIO_NOPULL, GPIO_IT_RISING, CC1101_GD0_IRQHandler);
+		GPIO_EnableInput(CC1101_GD0_GPIO, CC1101_GD0_PIN, GPIO_Pull_None);
+		GPIO_OnChange(CC1101_GD0_GPIO, CC1101_GD0_PIN, GPIO_IT_Rising, CC1101_GD0_IRQHandler);
 	}
 
 	CC1101_SPIStop();
@@ -302,8 +303,8 @@ void CC1101_Deinit(void)
 	CC1101_SPIStart();
 	CC1101_Reset();
 	CC1101_SPIStop();
-	GPIO_Disable(CC1101_GD0_GPIO, CC1101_GD0_PIN);
-	GPIO_Disable(CC1101_CS_GPIO, CC1101_CS_PIN);
+	GPIO_Deinit(CC1101_GD0_GPIO, CC1101_GD0_PIN);
+	GPIO_Deinit(CC1101_CS_GPIO, CC1101_CS_PIN);
 }
 
 uint8_t CC1101_Rx(uint8_t * data, uint8_t count)
@@ -465,7 +466,7 @@ static void CC1101_EnterRx(void)
 	while (HAL_GetTick() - now < ENTER_RX_TIMEOUT)
 	{
 		CC1101_Select();
-		SPI_TxRx( CC1101_SPI, &nop, &status, 1);
+		SPI_Transfer( CC1101_SPI, &nop, &status, 1);
 		CC1101_Deselect();
 
 		switch (STATUS_TO_STATE(status))
@@ -520,7 +521,7 @@ static void CC1101_Reset(void)
 static void CC1101_Command(uint8_t cmd)
 {
 	CC1101_Select();
-	SPI_Tx(CC1101_SPI, &cmd, 1);
+	SPI_Write(CC1101_SPI, &cmd, 1);
 	CC1101_Deselect();
 }
 
@@ -531,14 +532,14 @@ static uint8_t CC1101_ReadStatus(uint8_t stat)
 			stat | ADDR_READ | ADDR_BURST,
 			0x00,
 	};
-	SPI_TxRx(CC1101_SPI, data, data, sizeof(data));
+	SPI_Transfer(CC1101_SPI, data, data, sizeof(data));
 	CC1101_Deselect();
 	return data[1];
 }
 
 static inline void CC1101_SPIStart(void)
 {
-	SPI_Init(CC1101_SPI, SPI_BITRATE, SPI_MODE0);
+	SPI_Init(CC1101_SPI, SPI_BITRATE, SPI_Mode_0);
 }
 
 static inline void CC1101_SPIStop(void)
@@ -550,8 +551,8 @@ static void CC1101_WriteRegs(uint8_t reg, const uint8_t * data, uint8_t count)
 {
 	uint8_t header = reg | ADDR_WRITE | ADDR_BURST;
 	CC1101_Select();
-	SPI_Tx(CC1101_SPI, &header, 1);
-	SPI_Tx(CC1101_SPI, data, count);
+	SPI_Write(CC1101_SPI, &header, 1);
+	SPI_Write(CC1101_SPI, data, count);
 	CC1101_Deselect();
 }
 
@@ -559,8 +560,8 @@ static void CC1101_ReadRegs(uint8_t reg, uint8_t * data, uint8_t count)
 {
 	uint8_t header = reg | ADDR_READ | ADDR_BURST;
 	CC1101_Select();
-	SPI_Tx(CC1101_SPI, &header, 1);
-	SPI_Rx(CC1101_SPI, data, count);
+	SPI_Write(CC1101_SPI, &header, 1);
+	SPI_Read(CC1101_SPI, data, count);
 	CC1101_Deselect();
 }
 

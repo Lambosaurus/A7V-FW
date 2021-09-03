@@ -47,7 +47,7 @@ static struct {
 
 void IR_Init(uint8_t address)
 {
-	UART_Init(IR_UART, IR_BAUD);
+	UART_Init(IR_UART, IR_BAUD, UART_Mode_Default);
 	gAddress = address;
 }
 
@@ -66,7 +66,7 @@ void IR_Update(void)
 	}
 
 	uint8_t rx;
-	while (UART_Rx(IR_UART, &rx, 1))
+	while (UART_Read(IR_UART, &rx, 1))
 	{
 		gRx.bfr[0] = gRx.bfr[1];
 		gRx.bfr[1] = gRx.bfr[2];
@@ -77,9 +77,9 @@ void IR_Update(void)
 		   && address != 0
 		   && address != gAddress
 		   && gRx.bfr[2] == IR_Checksum(address))
-	   {
+		{
 			gRx.isHit = true;
-	   }
+		}
 	}
 }
 
@@ -97,7 +97,7 @@ void IR_Fire(void)
 				gAddress,
 				IR_Checksum(gAddress)
 		};
-		UART_Tx(IR_UART, burst, sizeof(burst));
+		UART_Write(IR_UART, burst, sizeof(burst));
 	}
 }
 

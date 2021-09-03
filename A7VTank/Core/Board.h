@@ -9,9 +9,9 @@ extern "C" {
 #include "stm32l0xx_hal.h"
 #include "stdbool.h"
 
-#define USE_GPIO_IRQS
-#define USE_TIM_IRQS
-#define USE_WDG
+#define GPIO_USE_IRQS
+#define TIM_USE_IRQS
+#define WDG_ENABLE
 
 #define UART1_GPIO		GPIOA
 #define UART1_PINS		(GPIO_PIN_9 | GPIO_PIN_10)
@@ -50,7 +50,7 @@ extern "C" {
 #define BUZZER_TIM			TIM_22
 #define BUZZER_TIM_CH		0
 #define BUZZER_PIN_AF		GPIO_AF5_TIM22
-#define USE_TIM22
+#define TIM22_ENABLE
 
 #define IR_UART				UART_1
 #define IR_STROBE_GPIO		GPIOA
@@ -64,7 +64,7 @@ extern "C" {
 #define SERVO_SIG_GPIO		GPIOA
 #define SERVO_SIG_PIN		GPIO_PIN_12
 #define SERVO_TIM			TIM_21
-#define USE_TIM21
+#define TIM21_ENABLE
 
 #define CC1101_CS_GPIO		GPIOB
 #define CC1101_CS_PIN		GPIO_PIN_1
@@ -74,14 +74,14 @@ extern "C" {
 #define CC1101_MISO_GPIO	GPIOB
 #define CC1101_MISO_PIN		GPIO_PIN_4
 #define CC1101_FREQ_KHZ		917000
-#define USE_EXTI_0
+#define GPIO_IRQ0_ENABLE
 
 #define LIS2_CS_GPIO		GPIOB
 #define LIS2_CS_PIN			GPIO_PIN_6
 #define LIS2_SPI			SPI_1
 #define LIS2_INT_GPIO		GPIOB
 #define LIS2_INT_PIN		GPIO_PIN_7
-#define USE_EXTI_7
+#define GPIO_IRQ7_ENABLE
 
 #define MOTOR_GPIO			GPIOA
 #define MOTOR_PINS_AF		GPIO_AF2_TIM2
@@ -94,7 +94,7 @@ extern "C" {
 #define MOTOR2_I1_CH		1
 #define MOTOR2_I2_PIN		GPIO_PIN_0
 #define MOTOR2_I2_CH		0
-#define USE_TIM2
+#define TIM2_ENABLE
 
 #ifdef __cplusplus
 }
