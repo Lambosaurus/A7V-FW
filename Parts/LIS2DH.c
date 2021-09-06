@@ -170,7 +170,8 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 {
 	GPIO_EnableOutput(LIS2_CS_GPIO, LIS2_CS_PIN, GPIO_PIN_SET);
 	gCfg.int_set = false;
-	GPIO_EnableIRQ(LIS2_INT_GPIO, LIS2_INT_PIN, GPIO_NOPULL, GPIO_IT_FALLING, LIS2_INT_IRQHandler);
+	GPIO_EnableInput(LIS2_INT_GPIO, LIS2_INT_PIN, GPIO_Pull_None);
+	GPIO_OnChange(LIS2_INT_GPIO, LIS2_INT_PIN, GPIO_IT_Falling, LIS2_INT_IRQHandler);
 
 	LIS2_SPIStart();
 
@@ -264,7 +265,7 @@ bool LIS2_Init(const LIS2_Config_t * cfg)
 
 void LIS2_Deinit(void)
 {
-	GPIO_Disable(LIS2_INT_GPIO, LIS2_INT_PIN);
+	GPIO_Deinit(LIS2_INT_GPIO, LIS2_INT_PIN);
 
 	uint8_t ctrl[6] = {0};
 	LIS2_SPIStart();
@@ -330,8 +331,8 @@ static void LIS2_WriteRegs(uint8_t reg, const uint8_t * data, uint8_t count)
 {
 	uint8_t header = reg | ADDR_WRITE | ADDR_BURST;
 	LIS2_Select();
-	SPI_Tx(LIS2_SPI, &header, 1);
-	SPI_Tx(LIS2_SPI, data, count);
+	SPI_Write(LIS2_SPI, &header, 1);
+	SPI_Write(LIS2_SPI, data, count);
 	LIS2_Deselect();
 }
 
@@ -339,8 +340,8 @@ static void LIS2_ReadRegs(uint8_t reg, uint8_t * data, uint8_t count)
 {
 	uint8_t header = reg | ADDR_READ | ADDR_BURST;
 	LIS2_Select();
-	SPI_Tx(LIS2_SPI, &header, 1);
-	SPI_Rx(LIS2_SPI, data, count);
+	SPI_Write(LIS2_SPI, &header, 1);
+	SPI_Read(LIS2_SPI, data, count);
 	LIS2_Deselect();
 }
 
@@ -358,7 +359,7 @@ static void LIS2_WriteReg(uint8_t reg, uint8_t data)
 
 static inline void LIS2_SPIStart(void)
 {
-	SPI_Init(LIS2_SPI, SPI_BITRATE, SPI_MODE0);
+	SPI_Init(LIS2_SPI, SPI_BITRATE, SPI_Mode_0);
 }
 
 static inline void LIS2_SPIStop(void)

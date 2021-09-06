@@ -28,18 +28,12 @@ static inline bool Button_IsHeld(Button_t * btn);
 
 void Button_Init(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin)
 {
-	Button_InitAdv(btn, gpio, pin, GPIO_PULLUP, GPIO_PIN_RESET);
+	Button_InitAdv(btn, gpio, pin, GPIO_Pull_None, GPIO_PIN_RESET);
 }
 
 void Button_InitAdv(Button_t * btn, GPIO_TypeDef * gpio, uint32_t pin, uint32_t pull, GPIO_PinState heldState)
 {
-	GPIO_InitTypeDef init = {
-		.Pin = pin,
-		.Mode = GPIO_MODE_INPUT,
-		.Pull = pull,
-		.Speed = GPIO_SPEED_FREQ_LOW
-	};
-	HAL_GPIO_Init(gpio, &init);
+	GPIO_EnableInput(gpio, pin, pull);
 
 	btn->gpio = gpio;
 	btn->pin = pin;

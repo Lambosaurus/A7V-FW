@@ -67,7 +67,7 @@ void Motor_Init(void)
 void Motor_Deinit(void)
 {
 	TIM_Stop(MOTOR_TIM);
-	GPIO_Disable(MOTOR_GPIO, MOTOR_PINS_ALL);
+	GPIO_Deinit(MOTOR_GPIO, MOTOR_PINS_ALL);
 	TIM_Deinit(MOTOR_TIM);
 }
 

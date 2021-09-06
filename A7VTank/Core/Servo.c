@@ -49,8 +49,8 @@ void Servo_Deinit(void)
 {
 	TIM_Stop(SERVO_TIM);
 	TIM_Deinit(SERVO_TIM);
-	GPIO_Disable(SERVO_EN_GPIO, SERVO_EN_PIN);
-	GPIO_Disable(SERVO_SIG_GPIO, SERVO_SIG_PIN);
+	GPIO_Deinit(SERVO_EN_GPIO, SERVO_EN_PIN);
+	GPIO_Deinit(SERVO_SIG_GPIO, SERVO_SIG_PIN);
 }
 
 void Servo_SetPulse(int16_t offset)
